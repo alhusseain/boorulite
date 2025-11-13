@@ -11,7 +11,7 @@ class ApiService {
       'page': page.toString(),
       if (tags.isNotEmpty) 'tags': tags,
     });
-
+    // This print is for light inspection
     print('Fetching: $uri');
 
     try {

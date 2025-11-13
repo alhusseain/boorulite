@@ -6,7 +6,7 @@ class MainNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BottomNavigationBar(
-      currentIndex: 0,
+      currentIndex: 1,
       onTap: (_) {},
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.app_settings_alt), label: 'Preferences'),

@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 
-class MainFeedWidget extends StatelessWidget {
+class MainFeedWidget extends StatefulWidget {
   const MainFeedWidget({super.key});
 
+  @override
+  State<MainFeedWidget> createState() => _MainFeedWidgetState();
+}
+
+class _MainFeedWidgetState extends State<MainFeedWidget>{
+  double _iconOpacity = 1.0 ;
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -10,14 +16,39 @@ class MainFeedWidget extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
-          PageView.builder(
+          NotificationListener(
+            onNotification: (notification) {
+              if (notification is ScrollStartNotification) {
+                setState(() {
+                  _iconOpacity = 0.0;
+                });
+              } else if (notification is ScrollEndNotification) {
+                setState(() {
+                  _iconOpacity = 1.0;
+                });
+              }
+              return false;
+            },
+          child: PageView.builder(
             scrollDirection: Axis.vertical,
             itemCount: 10,
+            onPageChanged: (index) {
+              setState(() {
+                _iconOpacity = 0.0;
+              });
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (mounted) {
+                  setState(() {
+                    _iconOpacity = 1.0;
+                  });
+                }
+              });
+            },
             itemBuilder: (context, index) {
-              return Container(
-                width: double.infinity,
-                height: double.infinity,
-                child: Image.network(
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(
                   'https://picsum.photos/400/800?random=$index',
                   fit: BoxFit.cover,
                   loadingBuilder: (context, child, loadingProgress) {
@@ -35,16 +66,87 @@ class MainFeedWidget extends StatelessWidget {
                     color: colorScheme.surface,
                     child: Center(
                       child: Icon(
-                        Icons.broken_image,
+                        Icons.stop_rounded,
                         size: 50,
                         color: colorScheme.onSurface,
                       ),
                     ),
                   ),
                 ),
+                  Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black38,
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: MediaQuery.of(context).size.height * 0.5,
+                    right: 20,
+                    child: SafeArea(
+                      child: AnimatedOpacity(
+                        opacity: _iconOpacity,
+                        duration: const Duration(milliseconds: 300),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                          Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: colorScheme.surface.withAlpha(170),
+                              border: Border.all(
+                                color: colorScheme.outline.withAlpha(100),
+                                width: 1,
+                              ),
+                            ),
+                            child: IconButton(
+                              onPressed: () {},
+                              icon: Icon(
+                                Icons.favorite_border_outlined,
+                                color: colorScheme.onSurface,
+                                size: 24,
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 10),
+                          Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: colorScheme.surface.withAlpha(170),
+                              border: Border.all(
+                                color: colorScheme.outline.withAlpha(100),
+                                width: 1,
+                              ),
+                            ),
+                            child: IconButton(
+                              onPressed: () {},
+                              icon: Icon(
+                                Icons.thumb_down_alt_outlined,
+                                color: colorScheme.onSurface,
+                                size: 24,
+                              ),
+                            ),
+                          ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               );
             },
           ),
+        ),
           Positioned(
             top: 0,
             left: 0,
@@ -71,60 +173,6 @@ class MainFeedWidget extends StatelessWidget {
                     color: colorScheme.onSurface,
                   ),
                 ),
-              ),
-            ),
-          ),
-
-          Positioned(
-            top: MediaQuery.of(context).size.height * 0.5,
-            right: 20,
-            child: SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: colorScheme.surface.withAlpha(170),
-                      border: Border.all(
-                        color: colorScheme.outline.withAlpha(100),
-                        width: 1,
-                      ),
-                    ),
-                    child: IconButton(
-                      onPressed: () {},
-                      icon: Icon(
-                        Icons.favorite_border_outlined,
-                        color: colorScheme.onSurface,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: colorScheme.surface.withAlpha(170),
-                      border: Border.all(
-                        color: colorScheme.outline.withAlpha(100),
-                        width: 1,
-                      ),
-                    ),
-                    child: IconButton(
-                      onPressed: () {},
-                      icon: Icon(
-                        Icons.thumb_down_alt_outlined,
-                        color: colorScheme.onSurface,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ),
           ),
