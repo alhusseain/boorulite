@@ -1,4 +1,5 @@
 import 'package:boorulite/main.dart';
+import 'package:boorulite/pages/profile_page.dart';
 import 'package:flutter/material.dart';
 
 class MainNavBar extends StatelessWidget {
@@ -18,7 +19,16 @@ class MainNavBar extends StatelessWidget {
         onTap: (i) {
           switch (i) {
             case 0:
-              break;
+               Navigator.push(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      ProfilePage(),
+                  transitionDuration: Duration.zero,
+                  reverseTransitionDuration: Duration.zero,
+                ),
+              );           
+                break;
             case 1:
               Navigator.push(
                 context,

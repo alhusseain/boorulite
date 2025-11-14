@@ -1,3 +1,4 @@
+import 'package:boorulite/widgets/main_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/block_list_provider.dart';
@@ -13,7 +14,9 @@ import '../utils/app_colors.dart';
 /// - Set content filtering options
 /// - Configure video playback settings
 class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
+  const ProfilePage({
+    super.key,
+    });
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +31,7 @@ class ProfilePage extends StatelessWidget {
         elevation: 0,
       ),
       body: const SettingsContent(),
+      bottomNavigationBar: MainNavBar(currIndex:0 ),
     );
   }
 }
