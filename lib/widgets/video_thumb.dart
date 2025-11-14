@@ -14,17 +14,17 @@ class VideoThumbnailWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRect(
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-            ),
+    return Stack(
+      children: [
+        Positioned.fill(
+            child: ClipRect(child: Image.network(imageUrl, fit: BoxFit.cover)),
           ),
-
-          Positioned.fill(
+        Positioned.fill(
+          child: GestureDetector(
+            onTap: () {
+              print('Thumbnail tapped');
+              Navigator.pop(context);
+            },
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -38,40 +38,36 @@ class VideoThumbnailWidget extends StatelessWidget {
               ),
             ),
           ),
+        ),
 
-          Positioned(
-            left: 6,
-            bottom: 6,
-            child: Row(
-              children: [
-                const Icon(Icons.visibility,
-                    color: Colors.white, size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  "$views",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
+        Positioned(
+          left: 6,
+          bottom: 6,
+          child: Row(
+            children: [
+              const Icon(Icons.visibility, color: Colors.white, size: 16),
+              const SizedBox(width: 4),
+              Text(
+                "$views",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
                 ),
-              ],
-            ),
-          ),
-
-          Positioned(
-            top: 4,
-            right: 4,
-            child: GestureDetector(
-              onTap: onOptionsTap,
-              child: const Icon(
-                Icons.close,
-                color: Colors.white,
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+
+        Positioned(
+          top: 4,
+          right: 4,
+          child: GestureDetector(
+            onTap: onOptionsTap,
+            child: const Icon(Icons.close, color: Colors.white),
+          ),
+        ),
+      ],
     );
   }
 }

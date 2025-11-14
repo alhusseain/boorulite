@@ -46,7 +46,7 @@ class LikedScreen extends StatelessWidget {
     body: 
     GridView.count(crossAxisCount: width < 600 ? 3 : 5, children: [
       ...List.generate(
-        8,
+        20,
         (index) => VideoThumbnailWidget(
           imageUrl: 'https://picsum.photos/200/300?random=${index + 10}',
           views: (index + 1) * 35,
