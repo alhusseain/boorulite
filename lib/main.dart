@@ -4,6 +4,8 @@ import 'providers/block_list_provider.dart';
 import 'providers/settings_provider.dart';
 import 'pages/profile_page.dart';
 import 'utils/app_colors.dart';
+import 'widgets/main_feed.dart';
+import 'widgets/main_nav_bar.dart';
 
 void main() {
   runApp(const MyApp());
@@ -20,7 +22,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],
       child: MaterialApp(
-        title: 'SWAPD 402 - Content Filtering',
+        title: 'Boorulite',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: AppColors.darkScheme,
@@ -31,9 +33,20 @@ class MyApp extends StatelessWidget {
             elevation: 0,
           ),
         ),
-        home: const ProfilePage(),
+        home: const MainScreen(),
       ),
     );
   }
 }
 
+class MainScreen extends StatelessWidget {
+  const MainScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: MainFeedWidget(),
+      bottomNavigationBar: const MainNavBar(currIndex: 0),
+    );
+  }
+}
