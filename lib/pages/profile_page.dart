@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/block_list_provider.dart';
 import '../providers/settings_provider.dart';
-import '../utils/app_colors.dart';
+import '../app_colors.dart';
 
 /// Profile page that functions as a comprehensive content filtering and settings screen.
 /// 
