@@ -31,7 +31,7 @@ class PlaygroundScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: MainFeedWidget(),
-      bottomNavigationBar: const MainNavBar(),
+      bottomNavigationBar: const MainNavBar(currIndex: 1),
     );
   }
 }
@@ -42,7 +42,9 @@ class LikedScreen extends StatelessWidget {
   @override
   Widget build (BuildContext context){
     double width = MediaQuery.of(context).size.width;
-    return GridView.count(crossAxisCount: width < 600 ? 3 : 5, children: [
+    return Scaffold(
+    body: 
+    GridView.count(crossAxisCount: width < 600 ? 3 : 5, children: [
       ...List.generate(
         8,
         (index) => VideoThumbnailWidget(
@@ -53,6 +55,8 @@ class LikedScreen extends StatelessWidget {
           },
         ),
       )
-    ]);
+    ]),
+    bottomNavigationBar: const MainNavBar(currIndex:2 ),
+    );
   }
 }
