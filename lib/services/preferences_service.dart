@@ -61,4 +61,3 @@ class PreferencesService {
     return prefs.getInt(key) ?? defaultValue;
   }
 }
-
