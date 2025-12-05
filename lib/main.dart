@@ -5,12 +5,15 @@ import 'providers/block_list_provider.dart';
 import 'providers/feed_provider.dart';
 import 'providers/settings_provider.dart';
 import 'services/video_controller_service.dart';
+import 'services/notification_service.dart';
 import 'pages/profile_page.dart';
 import 'utils/app_colors.dart';
 import 'widgets/main_feed.dart';
 import 'widgets/main_nav_bar.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.initialize();
   runApp(const MyApp());
 }
 
@@ -51,11 +54,32 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   int _currentIndex = 1;
 
   // Key to access MainFeedWidget state
   final GlobalKey<MainFeedWidgetState> _feedKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      NotificationService.scheduleMissYouNotification(const Duration(seconds: 10));
+    } else if (state == AppLifecycleState.resumed) {
+      NotificationService.cancelAllNotifications();
+    }
+  }
 
   void _onTabSelected(int index) {
     final previousIndex = _currentIndex;
