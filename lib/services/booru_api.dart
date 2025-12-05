@@ -5,11 +5,16 @@ import '../models/post.dart';
 class ApiService {
   static const String _baseUrl = 'https://www.sakugabooru.com/post.json';
 
-  Future<List<Post>> fetchPosts({int limit = 10, int page = 1, String tags = ''}) async {
+  Future<List<Post>> fetchPosts({ int limit = 10, int page = 1, String tags = '', bool random = true,}) async {
+    String effectiveTags = tags;
+    if (random && !tags.contains('order:')) {
+      effectiveTags = tags.isEmpty ? 'order:random' : '$tags order:random';
+    }
+
     final uri = Uri.parse(_baseUrl).replace(queryParameters: {
       'limit': limit.toString(),
       'page': page.toString(),
-      if (tags.isNotEmpty) 'tags': tags,
+      if (effectiveTags.isNotEmpty) 'tags': effectiveTags,
     });
     // This print is for light inspection
     print('Fetching: $uri');

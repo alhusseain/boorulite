@@ -4,13 +4,17 @@ class Post {
   final String previewUrl;
   final String fileUrl;
   final String tags;
+  final String fileExt;
 
   Post({
     required this.id,
     required this.previewUrl,
     required this.fileUrl,
     required this.tags,
+    required this.fileExt,
   });
+
+  bool get isVideo => fileExt == 'mp4' || fileExt == 'webm';
 
   factory Post.fromJson(Map<String, dynamic> json) {
     return Post(
@@ -18,6 +22,7 @@ class Post {
       previewUrl: json['preview_url'] as String? ?? '',
       fileUrl: json['file_url'] as String? ?? '',
       tags: json['tags'] as String? ?? '',
+      fileExt: json['file_ext'] as String? ?? '',
     );
   }
 }
