@@ -4,6 +4,7 @@ import 'package:video_player/video_player.dart';
 import '../models/post.dart';
 import '../providers/feed_provider.dart';
 import '../services/video_controller_service.dart';
+import 'tag_selection_overlay.dart';
 
 class MainFeedWidget extends StatefulWidget {
   const MainFeedWidget({super.key});
@@ -14,7 +15,8 @@ class MainFeedWidget extends StatefulWidget {
 
 class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObserver {
   int _currentIndex = 0;
-  double _iconOpacity = 1.0;
+  bool _initialVideoLoaded = false;
+  bool _showTagOverlay = false;
 
   @override
   void initState() {
@@ -41,9 +43,49 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
     }
   }
 
-  // Called by parent widget on tab switch
   void pauseVideo() => context.read<VideoControllerService>().onBecameHidden();
   void resumeVideo() => context.read<VideoControllerService>().onBecameVisible();
+
+  void _showTagSelection() {
+    context.read<VideoControllerService>().pause();
+    setState(() => _showTagOverlay = true);
+  }
+
+  void _hideTagSelection() {
+    setState(() => _showTagOverlay = false);
+    context.read<VideoControllerService>().play();
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _onTagsConfirmed(List<String> selectedTags) {
+    if (selectedTags.isNotEmpty) {
+      // later 
+      _showSnackBar('Tags blocked!');
+    }
+  }
+
+  void _onFavorite() {
+    // later 
+    _showSnackBar('Favorited <3');
+  }
+
+  void _onHorizontalSwipe(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity > 300) {
+      _onFavorite();
+    } else if (velocity < -300) {
+      _showTagSelection();
+    }
+  }
 
   void _onPageChanged(int index, FeedProvider feedProvider, VideoControllerService videoService) {
     _currentIndex = index;
@@ -54,11 +96,6 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
     } else {
       videoService.disposeVideo();
     }
-
-    setState(() => _iconOpacity = 0.0);
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) setState(() => _iconOpacity = 1.0);
-    });
 
     if (index >= feedProvider.posts.length - 3) {
       feedProvider.loadMorePosts();
@@ -100,57 +137,63 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
       );
     }
 
+    if (!_initialVideoLoaded && feedProvider.hasPosts) {
+      _initialVideoLoaded = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final firstPost = feedProvider.posts[0];
+        if (firstPost.isVideo) {
+          videoService.initializeVideo(0, firstPost.fileUrl);
+        }
+      });
+    }
+
+    final currentPost = feedProvider.posts[_currentIndex];
+    
     return Scaffold(
       body: Stack(
         children: [
-          NotificationListener<ScrollNotification>(
-            onNotification: (notification) {
-              if (notification is ScrollStartNotification) {
-                setState(() => _iconOpacity = 0.0);
-              } else if (notification is ScrollEndNotification) {
-                setState(() => _iconOpacity = 1.0);
-              }
-              return false;
+          PageView.builder(
+            scrollDirection: Axis.vertical,
+            itemCount: feedProvider.posts.length,
+            onPageChanged: (index) => _onPageChanged(index, feedProvider, videoService),
+            itemBuilder: (context, index) {
+              final post = feedProvider.posts[index];
+              return _buildPostItem(post, index, colorScheme, videoService);
             },
-            child: PageView.builder(
-              scrollDirection: Axis.vertical,
-              itemCount: feedProvider.posts.length,
-              onPageChanged: (index) => _onPageChanged(index, feedProvider, videoService),
-              itemBuilder: (context, index) {
-                final post = feedProvider.posts[index];
-                return _buildPostItem(post, index, colorScheme, videoService);
-              },
-            ),
           ),
           Positioned(top: 0, left: 0, right: 0, child: _buildSearchBar(colorScheme)),
+          if (_showTagOverlay)
+            TagSelectionOverlay(
+              tags: currentPost.tags,
+              onClose: _hideTagSelection,
+              onConfirm: _onTagsConfirmed,
+            ),
         ],
       ),
     );
   }
 
   Widget _buildPostItem(Post post, int index, ColorScheme colorScheme, VideoControllerService videoService) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Container(
-          color: colorScheme.surface,
-          child: Center(child: _buildMediaContent(post, index, colorScheme, videoService)),
-        ),
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.transparent, Colors.black38],
+    return GestureDetector(
+      onHorizontalDragEnd: _onHorizontalSwipe,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Container(
+            color: colorScheme.surface,
+            child: Center(child: _buildMediaContent(post, index, colorScheme, videoService)),
+          ),
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, Colors.black38],
+              ),
             ),
           ),
-        ),
-        Positioned(
-          top: MediaQuery.of(context).size.height * 0.5,
-          right: 20,
-          child: SafeArea(child: _buildActionButtons(colorScheme)),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -166,14 +209,16 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
     final controller = videoService.controller;
     
     if (isCurrentVideo && controller != null && videoService.isInitialized) {
+      final showLoading = videoService.isBuffering || videoService.isWaitingForBuffer;
+      
       return GestureDetector(
         onTap: videoService.togglePlayPause,
         child: Stack(
           alignment: Alignment.center,
           children: [
             AspectRatio(aspectRatio: videoService.aspectRatio, child: VideoPlayer(controller)),
-            if (videoService.isBuffering) CircularProgressIndicator(color: colorScheme.primary),
-            if (!videoService.isBuffering)
+            if (showLoading) CircularProgressIndicator(color: colorScheme.primary),
+            if (!showLoading)
               AnimatedOpacity(
                 opacity: videoService.isPlaying ? 0.0 : 1.0,
                 duration: const Duration(milliseconds: 200),
@@ -220,34 +265,6 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
       fit: BoxFit.contain,
       loadingBuilder: (_, child, progress) => progress == null ? child : CircularProgressIndicator(color: colorScheme.primary),
       errorBuilder: (_, __, ___) => Icon(Icons.broken_image, size: 50, color: colorScheme.onSurface),
-    );
-  }
-
-  Widget _buildActionButtons(ColorScheme colorScheme) {
-    return AnimatedOpacity(
-      opacity: _iconOpacity,
-      duration: const Duration(milliseconds: 300),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildActionButton(icon: Icons.favorite_border_outlined, colorScheme: colorScheme, onPressed: () {}),
-          const SizedBox(height: 10),
-          _buildActionButton(icon: Icons.thumb_down_alt_outlined, colorScheme: colorScheme, onPressed: () {}),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton({required IconData icon, required ColorScheme colorScheme, required VoidCallback onPressed}) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: colorScheme.surface.withAlpha(170),
-        border: Border.all(color: colorScheme.outline.withAlpha(100), width: 1),
-      ),
-      child: IconButton(onPressed: onPressed, icon: Icon(icon, color: colorScheme.onSurface, size: 24)),
     );
   }
 

@@ -23,6 +23,7 @@ class VideoControllerService extends ChangeNotifier {
   bool get isInitialized => _controller?.value.isInitialized ?? false;
   bool get isPlaying => _controller?.value.isPlaying ?? false;
   bool get isBuffering => _controller?.value.isBuffering ?? false;
+  bool get isWaitingForBuffer => isInitialized && !_hasStartedPlaying;
   double get aspectRatio => _controller?.value.aspectRatio ?? 16 / 9;
   
   double get bufferProgress {
