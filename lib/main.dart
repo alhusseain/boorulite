@@ -2,7 +2,9 @@ import 'package:boorulite/widgets/video_thumb.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/block_list_provider.dart';
+import 'providers/feed_provider.dart';
 import 'providers/settings_provider.dart';
+import 'services/video_controller_service.dart';
 import 'pages/profile_page.dart';
 import 'utils/app_colors.dart';
 import 'widgets/main_feed.dart';
@@ -21,6 +23,8 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => BlockListProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => FeedProvider()),
+        ChangeNotifierProvider(create: (_) => VideoControllerService()),
       ],
       child: MaterialApp(
         title: 'Boorulite',
@@ -40,51 +44,74 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MainScreen extends StatelessWidget {
+class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: MainFeedWidget(),
-      bottomNavigationBar: const MainNavBar(currIndex: 0),
-    );
-  }
+  State<MainScreen> createState() => _MainScreenState();
 }
 
-class PlaygroundScreen extends StatelessWidget {
-  const PlaygroundScreen({super.key});
+class _MainScreenState extends State<MainScreen> {
+  int _currentIndex = 1;
+
+  // Key to access MainFeedWidget state
+  final GlobalKey<MainFeedWidgetState> _feedKey = GlobalKey();
+
+  void _onTabSelected(int index) {
+    final previousIndex = _currentIndex;
+    
+    setState(() {
+      _currentIndex = index;
+    });
+    // Tab switching logic for main feed
+    if (previousIndex == 1 && index != 1) {
+      _feedKey.currentState?.pauseVideo();
+    } else if (previousIndex != 1 && index == 1) {
+      _feedKey.currentState?.resumeVideo();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: MainFeedWidget(),
-      bottomNavigationBar: const MainNavBar(currIndex: 1),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          // Index 0: Preferences
+          const ProfilePage(),
+          // Index 1: Home Feed
+          MainFeedWidget(key: _feedKey),
+          // Index 2: Likes
+          const LikedScreen(),
+        ],
+      ),
+      bottomNavigationBar: MainNavBar(
+        currIndex: _currentIndex,
+        onTabSelected: _onTabSelected,
+      ),
     );
   }
 }
-
 
 class LikedScreen extends StatelessWidget {
   const LikedScreen({super.key});
   @override
   Widget build (BuildContext context){
     double width = MediaQuery.of(context).size.width;
-    return Scaffold(
-    body: 
-    GridView.count(crossAxisCount: width < 600 ? 3 : 5, children: [
-      ...List.generate(
-        20,
-        (index) => VideoThumbnailWidget(
-          imageUrl: 'https://picsum.photos/200/300?random=${index + 10}',
-          views: (index + 1) * 35,
-          onOptionsTap: () {
-            print('Tapped options on thumb ${index + 1}');
-          },
-        ),
-      )
-    ]),
-    bottomNavigationBar: const MainNavBar(currIndex:2 ),
+    return GridView.count(
+      crossAxisCount: width < 600 ? 3 : 5,
+      children: [
+        ...List.generate(
+          20,
+          (index) => VideoThumbnailWidget(
+            imageUrl: 'https://picsum.photos/200/300?random=${index + 10}',
+            views: (index + 1) * 35,
+            onOptionsTap: () {
+              print('Tapped options on thumb ${index + 1}');
+            },
+          ),
+        )
+      ],
     );
   }
 }

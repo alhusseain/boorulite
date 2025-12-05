@@ -1,4 +1,3 @@
-import 'package:boorulite/widgets/main_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/block_list_provider.dart';
@@ -20,18 +19,20 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.darkScheme.surface,
-      appBar: AppBar(
-        title: Text(
-          'Settings & Content Filtering',
-          style: TextStyle(color: AppColors.darkScheme.onSurface),
-        ),
-        backgroundColor: AppColors.darkScheme.surface,
-        elevation: 0,
+    return SafeArea(
+      child: Column(
+        children: [
+          AppBar(
+            title: Text(
+              'Settings & Content Filtering',
+              style: TextStyle(color: AppColors.darkScheme.onSurface),
+            ),
+            backgroundColor: AppColors.darkScheme.surface,
+            elevation: 0,
+          ),
+          const Expanded(child: SettingsContent()),
+        ],
       ),
-      body: const SettingsContent(),
-      bottomNavigationBar: MainNavBar(currIndex:0 ),
     );
   }
 }
