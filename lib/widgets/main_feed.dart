@@ -23,8 +23,26 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _setupVideoService();
       context.read<FeedProvider>().fetchPosts();
     });
+  }
+
+  void _setupVideoService() {
+    final videoService = context.read<VideoControllerService>();
+    final feedProvider = context.read<FeedProvider>();
+    
+    videoService.setBatchCallbacks(
+      getUrlsBatch: (startIndex, count) {
+        final posts = feedProvider.posts;
+        final urls = <String>[];
+        for (int i = startIndex; i < startIndex + count && i < posts.length; i++) {
+          urls.add(posts[i].isVideo ? posts[i].fileUrl : '');
+        }
+        return urls;
+      },
+      getCount: () => feedProvider.posts.length,
+    );
   }
 
   @override
