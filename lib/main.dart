@@ -1,6 +1,10 @@
+import 'package:boorulite/models/post.dart';
+import 'package:boorulite/providers/saved_posts_provider.dart';
+import 'package:boorulite/widgets/liked_screen.dart';
 import 'package:boorulite/widgets/video_thumb.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'core/database/database_provider.dart';
 import 'providers/block_list_provider.dart';
 import 'providers/feed_provider.dart';
 import 'providers/settings_provider.dart';
@@ -10,7 +14,10 @@ import 'utils/app_colors.dart';
 import 'widgets/main_feed.dart';
 import 'widgets/main_nav_bar.dart';
 
-void main() {
+void main() async {
+  // Ensure that Flutter bindings are initialized before calling native code
+  WidgetsFlutterBinding.ensureInitialized();
+  await DatabaseProvider.database; // Initialize the database
   runApp(const MyApp());
 }
 
@@ -25,6 +32,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => FeedProvider()),
         ChangeNotifierProvider(create: (_) => VideoControllerService()),
+        ChangeNotifierProvider(create: (_) => SavedPostsProvider())
       ],
       child: MaterialApp(
         title: 'Boorulite',
@@ -93,25 +101,4 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
-class LikedScreen extends StatelessWidget {
-  const LikedScreen({super.key});
-  @override
-  Widget build (BuildContext context){
-    double width = MediaQuery.of(context).size.width;
-    return GridView.count(
-      crossAxisCount: width < 600 ? 3 : 5,
-      children: [
-        ...List.generate(
-          20,
-          (index) => VideoThumbnailWidget(
-            imageUrl: 'https://picsum.photos/200/300?random=${index + 10}',
-            views: (index + 1) * 35,
-            onOptionsTap: () {
-              print('Tapped options on thumb ${index + 1}');
-            },
-          ),
-        )
-      ],
-    );
-  }
-}
+

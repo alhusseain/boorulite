@@ -1,3 +1,4 @@
+import 'package:boorulite/services/saved_posts_service.dart';
 import 'package:flutter/foundation.dart';
 import '../models/post.dart';
 import '../services/booru_api.dart';
@@ -5,8 +6,9 @@ import '../services/booru_api.dart';
 /// Manages posts, pagination, and loading states for the main feed.
 class FeedProvider extends ChangeNotifier {
   final ApiService _api;
-  
-  FeedProvider({ApiService? api}) : _api = api ?? ApiService();
+
+  FeedProvider({ApiService? api})
+      : _api = api ?? ApiService();
 
   List<Post> _posts = [];
   int _currentPage = 1;

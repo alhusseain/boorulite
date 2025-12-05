@@ -1,9 +1,11 @@
+import 'package:boorulite/providers/saved_posts_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import '../models/post.dart';
 import '../providers/feed_provider.dart';
 import '../services/video_controller_service.dart';
+import '../repositories/debug_db_page.dart';
 
 class MainFeedWidget extends StatefulWidget {
   const MainFeedWidget({super.key});
@@ -148,7 +150,7 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
         Positioned(
           top: MediaQuery.of(context).size.height * 0.5,
           right: 20,
-          child: SafeArea(child: _buildActionButtons(colorScheme)),
+          child: SafeArea(child: _buildActionButtons(post,colorScheme)),
         ),
       ],
     );
@@ -223,16 +225,27 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
     );
   }
 
-  Widget _buildActionButtons(ColorScheme colorScheme) {
+  Widget _buildActionButtons(Post post, ColorScheme colorScheme) {
+    final savedPostsProvider = context.watch<SavedPostsProvider>();
     return AnimatedOpacity(
       opacity: _iconOpacity,
       duration: const Duration(milliseconds: 300),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildActionButton(icon: Icons.favorite_border_outlined, colorScheme: colorScheme, onPressed: () {}),
+          _buildActionButton(icon: Icons.favorite_border_outlined, colorScheme: colorScheme, onPressed: () {savedPostsProvider.savePost(post);}),
           const SizedBox(height: 10),
-          _buildActionButton(icon: Icons.thumb_down_alt_outlined, colorScheme: colorScheme, onPressed: () {}),
+          _buildActionButton(icon: Icons.thumb_down_alt_outlined, colorScheme: colorScheme, onPressed: () {savedPostsProvider.deletePost(post);}),
+          const SizedBox(height: 10),
+          // Temporary button to open the debug page
+          _buildActionButton(
+            icon: Icons.bug_report,
+            colorScheme: colorScheme,
+            onPressed: () {
+              Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const DebugDbPage()));
+            },
+          ),
         ],
       ),
     );
