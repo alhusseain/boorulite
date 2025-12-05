@@ -60,5 +60,25 @@ class PreferencesService {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(key) ?? defaultValue;
   }
+
+  /// Key for storing the profile image path.
+  static const String kProfileImagePathKey = 'profile_image_path';
+
+  /// Saves the profile image path to SharedPreferences.
+  /// 
+  /// [imagePath] - The local file path to the profile image.
+  /// 
+  /// Returns a Future that completes when the save operation is finished.
+  Future<void> saveProfileImagePath(String imagePath) async {
+    await setString(kProfileImagePathKey, imagePath);
+  }
+
+  /// Retrieves the profile image path from SharedPreferences.
+  /// 
+  /// Returns a Future that completes with the profile image path.
+  /// If no path exists, returns an empty string.
+  Future<String> getProfileImagePath() async {
+    return await getString(kProfileImagePathKey, '');
+  }
 }
 
