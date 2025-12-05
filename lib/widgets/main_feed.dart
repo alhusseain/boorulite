@@ -4,6 +4,7 @@ import 'package:video_player/video_player.dart';
 import '../models/post.dart';
 import '../providers/feed_provider.dart';
 import '../services/video_controller_service.dart';
+import 'tag_search_widget.dart';
 import 'tag_selection_overlay.dart';
 
 class MainFeedWidget extends StatefulWidget {
@@ -17,6 +18,7 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
   int _currentIndex = 0;
   bool _initialVideoLoaded = false;
   bool _showTagOverlay = false;
+  bool _showSearchOverlay = false;
 
   @override
   void initState() {
@@ -72,6 +74,28 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
   void _hideTagSelection() {
     setState(() => _showTagOverlay = false);
     context.read<VideoControllerService>().play();
+  }
+
+  void _showSearch() {
+    context.read<VideoControllerService>().pause();
+    setState(() => _showSearchOverlay = true);
+  }
+
+  void _hideSearch() {
+    setState(() => _showSearchOverlay = false);
+    context.read<VideoControllerService>().play();
+  }
+
+  void _onSearchTags(List<String> tags) {
+    final feedProvider = context.read<FeedProvider>();
+    if (tags.isEmpty) {
+      feedProvider.clearSearch();
+    } else {
+      feedProvider.setSearchTags(tags);
+    }
+    _currentIndex = 0;
+    _initialVideoLoaded = false;
+    _hideSearch();
   }
 
   void _showSnackBar(String message) {
@@ -179,12 +203,18 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
               return _buildPostItem(post, index, colorScheme, videoService);
             },
           ),
-          Positioned(top: 0, left: 0, right: 0, child: _buildSearchBar(colorScheme)),
+          Positioned(top: 0, left: 0, right: 0, child: _buildSearchBar(colorScheme, feedProvider)),
           if (_showTagOverlay)
             TagSelectionOverlay(
               tags: currentPost.tags,
               onClose: _hideTagSelection,
               onConfirm: _onTagsConfirmed,
+            ),
+          if (_showSearchOverlay)
+            TagSearchWidget(
+              onClose: _hideSearch,
+              onSearch: _onSearchTags,
+              initialTags: feedProvider.searchTags,
             ),
         ],
       ),
@@ -286,20 +316,46 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
     );
   }
 
-  Widget _buildSearchBar(ColorScheme colorScheme) {
+  Widget _buildSearchBar(ColorScheme colorScheme, FeedProvider feedProvider) {
+    final hasSearch = feedProvider.hasSearchTags;
+    final searchText = hasSearch ? feedProvider.searchTags.join(', ') : 'Search';
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: TextField(
-          decoration: InputDecoration(
-            hintText: 'Search',
-            prefixIcon: Icon(Icons.search, color: colorScheme.onSurface.withAlpha(255)),
-            filled: true,
-            fillColor: colorScheme.surface.withAlpha(170),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(5), borderSide: BorderSide.none),
+        child: GestureDetector(
+          onTap: _showSearch,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: colorScheme.surface.withAlpha(170),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.search, color: colorScheme.onSurface.withAlpha(hasSearch ? 255 : 150)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    searchText,
+                    style: TextStyle(
+                      color: colorScheme.onSurface.withAlpha(hasSearch ? 255 : 150),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (hasSearch)
+                  GestureDetector(
+                    onTap: () {
+                      feedProvider.clearSearch();
+                      _currentIndex = 0;
+                      _initialVideoLoaded = false;
+                    },
+                    child: Icon(Icons.close, color: colorScheme.onSurface, size: 20),
+                  ),
+              ],
+            ),
           ),
-          style: TextStyle(color: colorScheme.onSurface),
         ),
       ),
     );
