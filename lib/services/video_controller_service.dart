@@ -2,11 +2,29 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:video_player/video_player.dart';
 
-/// Manages video player lifecycle. Only ONE video will be active at a time to prevent buffer exhaustion, which happens every so often.
+/// Manages video player lifecycle with batch preloading.
+class _PreloadedVideo {
+  final int index;
+  final String url;
+  VideoPlayerController? controller;
+  bool isInitialized = false;
+  bool hasStartedPlaying = false;
+  
+  _PreloadedVideo({required this.index, required this.url});
+}
+
 class VideoControllerService extends ChangeNotifier {
   VideoPlayerController? _controller;
   int? _currentIndex;
   bool _isVisible = true;
+  
+  static const _batchSize = 3;
+  final Map<int, _PreloadedVideo> _preloadedVideos = {};
+  int _currentBatchStart = 0;
+  bool _isPreloading = false;
+  
+  List<String> Function(int startIndex, int count)? getVideoUrlsBatch;
+  int Function()? getTotalVideoCount;
   
 // buffer monitoring fields
   Timer? _bufferHealthTimer;
@@ -16,13 +34,14 @@ class VideoControllerService extends ChangeNotifier {
   bool _hasStartedPlaying = false;
   static const _maxBufferingDuration = Duration(seconds: 10);
   static const _maxConsecutiveBuffering = 3;
-  static const _initialBufferThreshold = 0.25; // 25% buffer required before first play to attempt to mitigate long pauses after playing a portion of the clip.
+  static const _initialBufferThreshold = 0;
 
   VideoPlayerController? get controller => _controller;
   int? get currentIndex => _currentIndex;
   bool get isInitialized => _controller?.value.isInitialized ?? false;
   bool get isPlaying => _controller?.value.isPlaying ?? false;
   bool get isBuffering => _controller?.value.isBuffering ?? false;
+  bool get isWaitingForBuffer => isInitialized && !_hasStartedPlaying;
   double get aspectRatio => _controller?.value.aspectRatio ?? 16 / 9;
   
   double get bufferProgress {
@@ -39,16 +58,90 @@ class VideoControllerService extends ChangeNotifier {
   
   bool get _hasEnoughBufferToStart => bufferProgress >= _initialBufferThreshold;
 
+  void setBatchCallbacks({
+    required List<String> Function(int startIndex, int count) getUrlsBatch,
+    required int Function() getCount,
+  }) {
+    getVideoUrlsBatch = getUrlsBatch;
+    getTotalVideoCount = getCount;
+  }
+
+  Future<void> _preloadBatch(int startIndex) async {
+    if (_isPreloading || getVideoUrlsBatch == null || getTotalVideoCount == null) return;
+    
+    final totalCount = getTotalVideoCount!();
+    if (startIndex >= totalCount) return;
+    
+    _isPreloading = true;
+    _currentBatchStart = startIndex;
+    
+    final keysToRemove = _preloadedVideos.keys
+        .where((idx) => idx < startIndex || idx >= startIndex + _batchSize)
+        .toList();
+    for (final key in keysToRemove) {
+      await _preloadedVideos[key]?.controller?.dispose();
+      _preloadedVideos.remove(key);
+    }
+    
+    final urls = getVideoUrlsBatch!(startIndex, _batchSize);
+    
+    for (int i = 0; i < urls.length; i++) {
+      final index = startIndex + i;
+      if (_preloadedVideos.containsKey(index)) continue;
+      
+      final url = urls[i];
+      if (url.isEmpty) continue;
+      
+      final preloaded = _PreloadedVideo(index: index, url: url);
+      _preloadedVideos[index] = preloaded;
+      
+      try {
+        final controller = VideoPlayerController.networkUrl(
+          Uri.parse(url),
+          videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+        );
+        preloaded.controller = controller;
+        await controller.initialize();
+        controller.setLooping(true);
+        preloaded.isInitialized = true;
+        debugPrint('Preloaded video at index $index');
+      } catch (e) {
+        debugPrint('Failed to preload video at index $index: $e');
+      }
+    }
+    
+    _isPreloading = false;
+    notifyListeners();
+  }
+
   Future<void> initializeVideo(int index, String videoUrl, {bool autoPlay = true}) async {
     if (_currentIndex == index && _controller != null) {
       if (isInitialized && autoPlay) play();
       return;
     }
 
-    await disposeVideo();
+    final batchEnd = _currentBatchStart + _batchSize - 1;
+    if (index >= batchEnd || !_preloadedVideos.containsKey(index)) {
+      _preloadBatch(index);
+    }
+
+    _stopBufferHealthMonitor();
+    _controller?.removeListener(_onVideoStateChanged);
+    _controller?.pause();
+    
     _currentVideoUrl = videoUrl;
     _consecutiveBufferingCount = 0;
     _hasStartedPlaying = false;
+
+    if (_preloadedVideos.containsKey(index) && _preloadedVideos[index]!.isInitialized) {
+      final preloaded = _preloadedVideos[index]!;
+      _controller = preloaded.controller;
+      _currentIndex = index;
+      _controller!.addListener(_onVideoStateChanged);
+      _startBufferHealthMonitor();
+      notifyListeners();
+      return;
+    }
 
     final newController = VideoPlayerController.networkUrl(
       Uri.parse(videoUrl),
@@ -73,11 +166,21 @@ class VideoControllerService extends ChangeNotifier {
     _stopBufferHealthMonitor();
     _controller?.removeListener(_onVideoStateChanged);
     _controller?.pause();
-    await _controller?.dispose();
+    final isPreloaded = _currentIndex != null && _preloadedVideos.containsKey(_currentIndex);
+    if (!isPreloaded) {
+      await _controller?.dispose();
+    }
     _controller = null;
     _currentIndex = null;
     _currentVideoUrl = null;
     notifyListeners();
+  }
+  
+  Future<void> disposeAllPreloaded() async {
+    for (final preloaded in _preloadedVideos.values) {
+      await preloaded.controller?.dispose();
+    }
+    _preloadedVideos.clear();
   }
   // we check every second if the video is stuck buffering, because the video playback function degrades as you scroll, and might need a refresh.
   void _startBufferHealthMonitor() {
@@ -94,7 +197,6 @@ class VideoControllerService extends ChangeNotifier {
   void _checkBufferHealth() {
     if (_controller == null || !isInitialized) return;
     
-    //this segment Handles the initial 25% buffer 
     if (!_hasStartedPlaying) {
       if (_hasEnoughBufferToStart && _isVisible) {
         debugPrint('Buffer reached ${(bufferProgress * 100).toInt()}%, starting playback');
@@ -105,18 +207,15 @@ class VideoControllerService extends ChangeNotifier {
       return;
     }
     
-    // Pause if buffering (prevents progress bar moving while loading)
     if (isBuffering && isPlaying) {
       _controller?.pause();
       notifyListeners();
     }
     
-    // Check for stuck buffering
     if (isBuffering) {
       _bufferingStartTime ??= DateTime.now();
       final bufferingDuration = DateTime.now().difference(_bufferingStartTime!);
       
-      // If buffering too long, attempt recovery
       if (bufferingDuration > _maxBufferingDuration) {
         _consecutiveBufferingCount++;
         debugPrint('Buffer stuck for ${bufferingDuration.inSeconds}s (attempt $_consecutiveBufferingCount)');
@@ -156,7 +255,15 @@ class VideoControllerService extends ChangeNotifier {
     final index = _currentIndex!;
     final position = _controller?.value.position ?? Duration.zero;
     
-    await disposeVideo();
+    if (_preloadedVideos.containsKey(index)) {
+      await _preloadedVideos[index]?.controller?.dispose();
+      _preloadedVideos.remove(index);
+    }
+    
+    _stopBufferHealthMonitor();
+    _controller?.removeListener(_onVideoStateChanged);
+    await _controller?.dispose();
+    _controller = null;
     
     await Future.delayed(const Duration(milliseconds: 500));
     
@@ -221,6 +328,7 @@ class VideoControllerService extends ChangeNotifier {
     _stopBufferHealthMonitor();
     _controller?.removeListener(_onVideoStateChanged);
     _controller?.dispose();
+    disposeAllPreloaded();
     super.dispose();
   }
 }

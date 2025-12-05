@@ -1,3 +1,5 @@
+import 'package:boorulite/main.dart';
+import 'package:boorulite/pages/profile_page.dart';
 import 'package:flutter/material.dart';
 
 class MainNavBar extends StatelessWidget {

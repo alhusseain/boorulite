@@ -1,23 +1,46 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/post.dart';
-// this entire file is placeholder, its an example i found off of the internet and its only here so we have a template to build upon
-class ApiService {
-  static const String _baseUrl = 'https://www.sakugabooru.com/post.json';
+import '../models/tag.dart';
 
-  Future<List<Post>> fetchPosts({ int limit = 10, int page = 1, String tags = '', bool random = true,}) async {
+class ApiService {
+  static const String _baseUrl = 'https://www.sakugabooru.com';
+
+  Future<List<Tag>> fetchTags({String namePattern = '', int limit = 10}) async {
+    final uri = Uri.parse('$_baseUrl/tag.json').replace(queryParameters: {
+      'limit': limit.toString(),
+      'order': 'count',
+      if (namePattern.isNotEmpty) 'name_pattern': namePattern,
+    });
+
+    try {
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        List<dynamic> body = jsonDecode(response.body);
+        return body.map((item) => Tag.fromJson(item)).toList();
+      } else {
+        throw Exception('Failed to load tags: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching tags: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Post>> fetchPosts({int limit = 10, int page = 1, String tags = '', bool random = true}) async {
     String effectiveTags = tags;
     if (random && !tags.contains('order:')) {
       effectiveTags = tags.isEmpty ? 'order:random' : '$tags order:random';
     }
 
-    final uri = Uri.parse(_baseUrl).replace(queryParameters: {
+    final uri = Uri.parse('$_baseUrl/post.json').replace(queryParameters: {
       'limit': limit.toString(),
       'page': page.toString(),
       if (effectiveTags.isNotEmpty) 'tags': effectiveTags,
     });
-    // This print is for light inspection
-    print('Fetching: $uri');
+
+    print('Fetching posts from: $uri');
 
     try {
       final response = await http.get(uri);
