@@ -7,7 +7,7 @@ import 'providers/settings_provider.dart';
 import 'services/video_controller_service.dart';
 import 'services/notification_service.dart';
 import 'pages/profile_page.dart';
-import 'utils/app_colors.dart';
+import 'app_colors.dart';
 import 'widgets/main_feed.dart';
 import 'widgets/main_nav_bar.dart';
 
