@@ -14,9 +14,7 @@ dependencies:
   http: ^1.5.0
   video_player: ^2.8.1
   chewie: ^1.7.1
-  flutter_local_notifications: ^18.0.1
-  sqflite:
-
+  sqflite: ^2.3.2
 dev_dependencies:
   flutter_test:
     sdk: flutter

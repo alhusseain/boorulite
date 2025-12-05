@@ -1,21 +1,23 @@
+import 'package:boorulite/models/post.dart';
 import 'package:boorulite/providers/saved_posts_provider.dart';
 import 'package:boorulite/widgets/liked_screen.dart';
 import 'package:boorulite/widgets/video_thumb.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'core/database/database_provider.dart';
 import 'providers/block_list_provider.dart';
 import 'providers/feed_provider.dart';
 import 'providers/settings_provider.dart';
 import 'services/video_controller_service.dart';
-import 'services/notification_service.dart';
 import 'pages/profile_page.dart';
-import 'app_colors.dart';
+import 'utils/app_colors.dart';
 import 'widgets/main_feed.dart';
 import 'widgets/main_nav_bar.dart';
 
 void main() async {
+  // Ensure that Flutter bindings are initialized before calling native code
   WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService.initialize();
+  await DatabaseProvider.database; // Initialize the database
   runApp(const MyApp());
 }
 
@@ -29,8 +31,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => BlockListProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => FeedProvider()),
-        ChangeNotifierProvider(create: (_) => SavedPostsProvider()),
         ChangeNotifierProvider(create: (_) => VideoControllerService()),
+        ChangeNotifierProvider(create: (_) => SavedPostsProvider())
       ],
       child: MaterialApp(
         title: 'Boorulite',
@@ -57,32 +59,11 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
+class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 1;
 
   // Key to access MainFeedWidget state
   final GlobalKey<MainFeedWidgetState> _feedKey = GlobalKey();
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
-      NotificationService.scheduleMissYouNotification(const Duration(seconds: 10));
-    } else if (state == AppLifecycleState.resumed) {
-      NotificationService.cancelAllNotifications();
-    }
-  }
 
   void _onTabSelected(int index) {
     final previousIndex = _currentIndex;
@@ -119,4 +100,5 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     );
   }
 }
+
 
