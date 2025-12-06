@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import '../models/post.dart';
+import '../providers/saved_posts_provider.dart';
 import '../providers/feed_provider.dart';
 import '../services/video_controller_service.dart';
 import 'tag_search_widget.dart';
@@ -115,15 +116,15 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
     }
   }
 
-  void _onFavorite() {
-    // later 
-    _showSnackBar('Favorited <3');
+  void _onFavorite(Post post) {
+    context.read<SavedPostsProvider>().savePost(post);
+    _showSnackBar('Added to liked posts <3');
   }
 
   void _onHorizontalSwipe(DragEndDetails details) {
     final velocity = details.primaryVelocity ?? 0;
     if (velocity > 300) {
-      _onFavorite();
+      _onFavorite(context.read<FeedProvider>().posts[_currentIndex]);
     } else if (velocity < -300) {
       _showTagSelection();
     }
@@ -240,6 +241,7 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
               ),
             ),
           ),
+          Positioned(bottom: 80, right: 10, child: _buildActionButtons(post, colorScheme)),
         ],
       ),
     );
@@ -358,6 +360,36 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildActionButtons(Post post, ColorScheme colorScheme) {
+    final savedPostsProvider = context.watch<SavedPostsProvider>();
+    final isLiked = savedPostsProvider.posts.any((p) => p.id == post.id);
+
+    return Column(
+      children: [
+        IconButton(
+          icon: Icon(isLiked ? Icons.favorite : Icons.favorite_border, color: isLiked ? Colors.red : Colors.white),
+          onPressed: () {
+            if (isLiked) {
+              savedPostsProvider.deletePost(post);
+              _showSnackBar('Removed from liked posts');
+            } else {
+              savedPostsProvider.savePost(post);
+              _showSnackBar('Added to liked posts <3');
+            }
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.bug_report, color: Colors.white),
+          onPressed: () {
+            // ignore: avoid_print
+            print(post);
+            _showSnackBar('Post data printed to console.');
+          },
+        ),
+      ],
     );
   }
 }

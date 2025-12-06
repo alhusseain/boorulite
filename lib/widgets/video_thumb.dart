@@ -20,11 +20,6 @@ class VideoThumbnailWidget extends StatelessWidget {
             child: ClipRect(child: Image.network(imageUrl, fit: BoxFit.cover)),
           ),
         Positioned.fill(
-          child: GestureDetector(
-            onTap: () {
-              print('Thumbnail tapped');
-              Navigator.pop(context);
-            },
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -37,7 +32,6 @@ class VideoThumbnailWidget extends StatelessWidget {
                 ),
               ),
             ),
-          ),
         ),
 
         Positioned(

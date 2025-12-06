@@ -1,8 +1,9 @@
-import 'package:boorulite/widgets/video_thumb.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/saved_posts_provider.dart';
+import '../widgets/video_thumb.dart';
+import 'saved_feed.dart';
 
 class LikedScreen extends StatefulWidget {
   const LikedScreen({super.key});
@@ -21,7 +22,7 @@ class _LikedScreenState extends State<LikedScreen> {
   }
 
   @override
-  Widget build (BuildContext context){
+  Widget build(BuildContext context) {
     final savedPostsProvider = context.watch<SavedPostsProvider>();
     double width = MediaQuery.of(context).size.width;
 
@@ -37,13 +38,30 @@ class _LikedScreenState extends State<LikedScreen> {
 
     return GridView.count(
       crossAxisCount: width < 600 ? 3 : 5,
-      children: savedPostsProvider.posts.map((post) => VideoThumbnailWidget(
-          imageUrl: post.previewUrl,
-          views: post.score,
-          onOptionsTap: () {
-            savedPostsProvider.deletePost(post);
+      childAspectRatio: 0.75,
+      children: savedPostsProvider.posts.map((post) {
+        return GestureDetector(
+          onTap: () {
+            final index = savedPostsProvider.posts.indexOf(post);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => SavedFeed(
+                  posts: savedPostsProvider.posts,
+                  initialIndex: index,
+                ),
+              ),
+            );
           },
-        )).toList(),
+          child: VideoThumbnailWidget(
+            imageUrl: post.previewUrl,
+            views: post.score,
+            onOptionsTap: () {
+              savedPostsProvider.deletePost(post);
+            },
+          ),
+        );
+      }).toList(),
     );
   }
 }

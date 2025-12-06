@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:flutter/foundation.dart';
 import '../core/database/database_provider.dart';
@@ -15,7 +16,7 @@ class PostRepository {
         'id': post.id,
         'preview_url': post.previewUrl,
         'file_url': post.fileUrl,
-        'tags': post.tags,
+        'tags': jsonEncode(post.tags),
         'file_ext': post.fileExt,
         'score':post.score,
       },
@@ -32,7 +33,7 @@ class PostRepository {
       id: row['id'] as int,
       previewUrl: row['preview_url'] as String,
       fileUrl: row['file_url'] as String,
-      tags: row['tags'] as String,
+      tags: List<String>.from(jsonDecode(row['tags'] as String)),
       fileExt: row['file_ext'] as String,
       score: row['score'] as int,
     )).toList();
@@ -59,7 +60,7 @@ class PostRepository {
       id: row['id'] as int,
       previewUrl: row['preview_url'] as String,
       fileUrl: row['file_url'] as String,
-      tags: row['tags'] as String,
+      tags: List<String>.from(jsonDecode(row['tags'] as String)),
       fileExt: row['file_ext'] as String,
       score: row['score'] as int,
     );
@@ -83,3 +84,4 @@ class PostRepository {
     );
   }
 }
+    
