@@ -1,9 +1,8 @@
-import 'package:boorulite/widgets/main_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/block_list_provider.dart';
 import '../providers/settings_provider.dart';
-import '../utils/app_colors.dart';
+import '../app_colors.dart';
 
 /// Profile page that functions as a comprehensive content filtering and settings screen.
 /// 
@@ -20,18 +19,22 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.darkScheme.surface,
-      appBar: AppBar(
-        title: Text(
-          'Settings & Content Filtering',
-          style: TextStyle(color: AppColors.darkScheme.onSurface),
-        ),
-        backgroundColor: AppColors.darkScheme.surface,
-        elevation: 0,
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    return SafeArea(
+      child: Column(
+        children: [
+          AppBar(
+            title: Text(
+              'Settings & Content Filtering',
+              style: TextStyle(color: colorScheme.onSurface),
+            ),
+            backgroundColor: colorScheme.surface,
+            elevation: 0,
+          ),
+          const Expanded(child: SettingsContent()),
+        ],
       ),
-      body: const SettingsContent(),
-      bottomNavigationBar: MainNavBar(currIndex:0 ),
     );
   }
 }
@@ -105,12 +108,14 @@ class _SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.darkScheme.surface,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(12.0),
         border: Border.all(
-          color: AppColors.periwinkleBlue,
+          color: colorScheme.secondary.withAlpha(150),
           width: 1.0,
         ),
       ),
@@ -121,12 +126,12 @@ class _SettingsSection extends StatelessWidget {
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                Icon(icon, color: AppColors.brightBlue, size: 24.0),
+                Icon(icon, color: colorScheme.secondary, size: 24.0),
                 const SizedBox(width: 12.0),
                 Text(
                   title,
                   style: TextStyle(
-                    color: AppColors.chinoBeige,
+                    color: colorScheme.onSurface,
                     fontSize: 18.0,
                     fontWeight: FontWeight.bold,
                   ),
@@ -134,7 +139,7 @@ class _SettingsSection extends StatelessWidget {
               ],
             ),
           ),
-          const Divider(color: AppColors.periwinkleBlue, height: 1.0),
+          Divider(color: colorScheme.secondary.withAlpha(100), height: 1.0),
           ...children,
         ],
       ),
@@ -169,6 +174,8 @@ class _BlockListManagerState extends State<BlockListManager> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -178,16 +185,16 @@ class _BlockListManagerState extends State<BlockListManager> {
               Expanded(
                 child: TextField(
                   controller: _tagController,
-                  style: TextStyle(color: AppColors.chinoBeige),
+                  style: TextStyle(color: colorScheme.onSurface),
                   decoration: InputDecoration(
                     labelText: 'Add tag to block list',
-                    labelStyle: TextStyle(color: AppColors.chinoBeige),
+                    labelStyle: TextStyle(color: colorScheme.onSurface.withAlpha(180)),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: AppColors.periwinkleBlue),
+                      borderSide: BorderSide(color: colorScheme.secondary.withAlpha(150)),
                       borderRadius: BorderRadius.circular(8.0),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: AppColors.brightBlue),
+                      borderSide: BorderSide(color: colorScheme.primary),
                       borderRadius: BorderRadius.circular(8.0),
                     ),
                   ),
@@ -196,7 +203,7 @@ class _BlockListManagerState extends State<BlockListManager> {
               ),
               const SizedBox(width: 8.0),
               IconButton(
-                icon: Icon(Icons.add, color: AppColors.brightBlue),
+                icon: Icon(Icons.add, color: colorScheme.primary),
                 onPressed: _addTag,
                 tooltip: 'Add tag',
               ),
@@ -211,7 +218,7 @@ class _BlockListManagerState extends State<BlockListManager> {
                   child: Text(
                     'No blocked tags. Add tags above to filter content.',
                     style: TextStyle(
-                      color: AppColors.chinoBeige.withValues(alpha: 0.6),
+                      color: colorScheme.onSurface.withAlpha(150),
                       fontSize: 14.0,
                     ),
                     textAlign: TextAlign.center,
@@ -229,10 +236,10 @@ class _BlockListManagerState extends State<BlockListManager> {
                     return ListTile(
                       title: Text(
                         tag,
-                        style: TextStyle(color: AppColors.chinoBeige),
+                        style: TextStyle(color: colorScheme.onSurface),
                       ),
                       trailing: IconButton(
-                        icon: Icon(Icons.delete, color: AppColors.frenchFuchsia),
+                        icon: Icon(Icons.delete, color: colorScheme.error),
                         onPressed: () {
                           Provider.of<BlockListProvider>(context, listen: false)
                               .removeTag(tag);
@@ -261,6 +268,8 @@ class ContentQualitySettings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Consumer<SettingsProvider>(
       builder: (context, settings, child) {
         return Padding(
@@ -268,7 +277,7 @@ class ContentQualitySettings extends StatelessWidget {
           child: Column(
             children: [
               _buildRadioTile(
-                context: context,
+                colorScheme: colorScheme,
                 title: 'High Quality',
                 value: 'high_quality',
                 groupValue: settings.contentQuality,
@@ -277,7 +286,7 @@ class ContentQualitySettings extends StatelessWidget {
                 },
               ),
               _buildRadioTile(
-                context: context,
+                colorScheme: colorScheme,
                 title: 'Medium Quality',
                 value: 'medium',
                 groupValue: settings.contentQuality,
@@ -286,7 +295,7 @@ class ContentQualitySettings extends StatelessWidget {
                 },
               ),
               _buildRadioTile(
-                context: context,
+                colorScheme: colorScheme,
                 title: 'Any Quality',
                 value: 'any',
                 groupValue: settings.contentQuality,
@@ -302,18 +311,18 @@ class ContentQualitySettings extends StatelessWidget {
   }
 
   Widget _buildRadioTile({
-    required BuildContext context,
+    required ColorScheme colorScheme,
     required String title,
     required String value,
     required String? groupValue,
     required ValueChanged<String?> onChanged,
   }) {
     return RadioListTile<String>(
-      title: Text(title, style: TextStyle(color: AppColors.chinoBeige)),
+      title: Text(title, style: TextStyle(color: colorScheme.onSurface)),
       value: value,
       groupValue: groupValue,
       onChanged: onChanged,
-      activeColor: AppColors.brightBlue,
+      activeColor: colorScheme.primary,
     );
   }
 }
@@ -324,6 +333,8 @@ class DisplaySettings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Consumer<SettingsProvider>(
       builder: (context, settings, child) {
         return Padding(
@@ -331,14 +342,14 @@ class DisplaySettings extends StatelessWidget {
           child: Column(
             children: [
               SwitchListTile(
-                title: const Text(
+                title: Text(
                   'Auto Refresh',
-                  style: TextStyle(color: AppColors.chinoBeige),
+                  style: TextStyle(color: colorScheme.onSurface),
                 ),
                 subtitle: Text(
                   'Automatically refresh content every ${settings.refreshInterval}s',
                   style: TextStyle(
-                    color: AppColors.chinoBeige.withValues(alpha: 0.7),
+                    color: colorScheme.onSurface.withAlpha(180),
                     fontSize: 12.0,
                   ),
                 ),
@@ -346,17 +357,17 @@ class DisplaySettings extends StatelessWidget {
                 onChanged: (value) {
                   settings.setAutoRefresh(value);
                 },
-                activeThumbColor: AppColors.brightBlue,
-                activeTrackColor: AppColors.periwinkleBlue,
+                activeColor: colorScheme.primary,
+                activeTrackColor: colorScheme.secondary,
               ),
               if (settings.autoRefresh) ...[
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Row(
                     children: [
-                      const Text(
+                      Text(
                         'Refresh Interval:',
-                        style: TextStyle(color: AppColors.chinoBeige),
+                        style: TextStyle(color: colorScheme.onSurface),
                       ),
                       Expanded(
                         child: Slider(
@@ -368,20 +379,20 @@ class DisplaySettings extends StatelessWidget {
                           onChanged: (value) {
                             settings.setRefreshInterval(value.toInt());
                           },
-                          activeColor: AppColors.brightBlue,
+                          activeColor: colorScheme.primary,
                         ),
                       ),
                       Text(
                         '${settings.refreshInterval}s',
-                        style: TextStyle(color: AppColors.chinoBeige),
+                        style: TextStyle(color: colorScheme.onSurface),
                       ),
                     ],
                   ),
                 ),
               ],
-              const Divider(color: AppColors.periwinkleBlue),
+              Divider(color: colorScheme.secondary.withAlpha(100)),
               _buildRadioTile(
-                context: context,
+                colorScheme: colorScheme,
                 title: 'Grid View',
                 value: 'grid',
                 groupValue: settings.displayMode,
@@ -390,7 +401,7 @@ class DisplaySettings extends StatelessWidget {
                 },
               ),
               _buildRadioTile(
-                context: context,
+                colorScheme: colorScheme,
                 title: 'List View',
                 value: 'list',
                 groupValue: settings.displayMode,
@@ -406,18 +417,18 @@ class DisplaySettings extends StatelessWidget {
   }
 
   Widget _buildRadioTile({
-    required BuildContext context,
+    required ColorScheme colorScheme,
     required String title,
     required String value,
     required String? groupValue,
     required ValueChanged<String?> onChanged,
   }) {
     return RadioListTile<String>(
-      title: Text(title, style: TextStyle(color: AppColors.chinoBeige)),
+      title: Text(title, style: TextStyle(color: colorScheme.onSurface)),
       value: value,
       groupValue: groupValue,
       onChanged: onChanged,
-      activeColor: AppColors.brightBlue,
+      activeColor: colorScheme.primary,
     );
   }
 }
@@ -428,6 +439,8 @@ class ContentFilterSettings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Consumer<SettingsProvider>(
       builder: (context, settings, child) {
         return Padding(
@@ -435,14 +448,14 @@ class ContentFilterSettings extends StatelessWidget {
           child: Column(
             children: [
               SwitchListTile(
-                title: const Text(
+                title: Text(
                   'Show Only Sakuga',
-                  style: TextStyle(color: AppColors.chinoBeige),
+                  style: TextStyle(color: colorScheme.onSurface),
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Filter to show only high-quality sakuga animations',
                   style: TextStyle(
-                    color: AppColors.chinoBeige,
+                    color: colorScheme.onSurface.withAlpha(180),
                     fontSize: 12.0,
                   ),
                 ),
@@ -450,17 +463,17 @@ class ContentFilterSettings extends StatelessWidget {
                 onChanged: (value) {
                   settings.setShowOnlySakuga(value);
                 },
-                activeThumbColor: AppColors.brightBlue,
-                activeTrackColor: AppColors.periwinkleBlue,
+                activeColor: colorScheme.primary,
+                activeTrackColor: colorScheme.secondary,
               ),
-              const Divider(color: AppColors.periwinkleBlue),
+              Divider(color: colorScheme.secondary.withAlpha(100)),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Row(
                   children: [
-                    const Text(
+                    Text(
                       'Minimum Rating:',
-                      style: TextStyle(color: AppColors.chinoBeige),
+                      style: TextStyle(color: colorScheme.onSurface),
                     ),
                     Expanded(
                       child: Slider(
@@ -472,12 +485,12 @@ class ContentFilterSettings extends StatelessWidget {
                         onChanged: (value) {
                           settings.setMinRating(value.toInt());
                         },
-                        activeColor: AppColors.brightBlue,
+                        activeColor: colorScheme.primary,
                       ),
                     ),
                     Text(
                       '${settings.minRating}/5',
-                      style: TextStyle(color: AppColors.chinoBeige),
+                      style: TextStyle(color: colorScheme.onSurface),
                     ),
                   ],
                 ),
@@ -496,6 +509,8 @@ class VideoSettings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Consumer<SettingsProvider>(
       builder: (context, settings, child) {
         return Padding(
@@ -503,14 +518,14 @@ class VideoSettings extends StatelessWidget {
           child: Column(
             children: [
               SwitchListTile(
-                title: const Text(
+                title: Text(
                   'Auto Play Videos',
-                  style: TextStyle(color: AppColors.chinoBeige),
+                  style: TextStyle(color: colorScheme.onSurface),
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Automatically play videos when opened',
                   style: TextStyle(
-                    color: AppColors.chinoBeige,
+                    color: colorScheme.onSurface.withAlpha(180),
                     fontSize: 12.0,
                   ),
                 ),
@@ -518,12 +533,12 @@ class VideoSettings extends StatelessWidget {
                 onChanged: (value) {
                   settings.setAutoPlay(value);
                 },
-                activeThumbColor: AppColors.brightBlue,
-                activeTrackColor: AppColors.periwinkleBlue,
+                activeColor: colorScheme.primary,
+                activeTrackColor: colorScheme.secondary,
               ),
-              const Divider(color: AppColors.periwinkleBlue),
+              Divider(color: colorScheme.secondary.withAlpha(100)),
               _buildRadioTile(
-                context: context,
+                colorScheme: colorScheme,
                 title: 'Original Quality',
                 value: 'original',
                 groupValue: settings.videoQuality,
@@ -532,7 +547,7 @@ class VideoSettings extends StatelessWidget {
                 },
               ),
               _buildRadioTile(
-                context: context,
+                colorScheme: colorScheme,
                 title: 'High Quality',
                 value: 'high',
                 groupValue: settings.videoQuality,
@@ -541,7 +556,7 @@ class VideoSettings extends StatelessWidget {
                 },
               ),
               _buildRadioTile(
-                context: context,
+                colorScheme: colorScheme,
                 title: 'Medium Quality',
                 value: 'medium',
                 groupValue: settings.videoQuality,
@@ -557,18 +572,18 @@ class VideoSettings extends StatelessWidget {
   }
 
   Widget _buildRadioTile({
-    required BuildContext context,
+    required ColorScheme colorScheme,
     required String title,
     required String value,
     required String? groupValue,
     required ValueChanged<String?> onChanged,
   }) {
     return RadioListTile<String>(
-      title: Text(title, style: TextStyle(color: AppColors.chinoBeige)),
+      title: Text(title, style: TextStyle(color: colorScheme.onSurface)),
       value: value,
       groupValue: groupValue,
       onChanged: onChanged,
-      activeColor: AppColors.brightBlue,
+      activeColor: colorScheme.primary,
     );
   }
 }

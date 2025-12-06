@@ -1,0 +1,123 @@
+import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
+
+import '../models/post.dart';
+
+class SavedFeed extends StatefulWidget {
+  final List<Post> posts;
+  final int initialIndex;
+
+  const SavedFeed({
+    super.key,
+    required this.posts,
+    required this.initialIndex,
+  });
+
+  @override
+  State<VideoPlayerPage> createState() => _SavedFeedState();
+}
+
+class _SavedFeedState extends State<SafedFeed> {
+  late int currentIndex;
+  VideoPlayerController? _controller;
+  bool _showControls = true;
+
+  @override
+  void initState() {
+    super.initState();
+    currentIndex = widget.initialIndex;
+    _loadVideo();
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  void _loadVideo() async {
+    _controller?.dispose();
+
+    final post = widget.posts[currentIndex];
+
+    _controller = VideoPlayerController.network(post.fileUrl)
+      ..initialize().then((_) {
+        _controller!.play();
+        setState(() {});
+      });
+  }
+
+  void _next() {
+    if (currentIndex < widget.posts.length - 1) {
+      setState(() {
+        currentIndex++;
+      });
+      _loadVideo();
+    }
+  }
+
+  void _previous() {
+    if (currentIndex > 0) {
+      setState(() {
+        currentIndex--;
+      });
+      _loadVideo();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final post = widget.posts[currentIndex];
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: GestureDetector(
+        onTap: () {
+          setState(() => _showControls = !_showControls);
+        },
+        onHorizontalDragEnd: (details) {
+          if (details.primaryVelocity! < 0) {
+            _next();
+          } else {
+            _previous();
+          }
+        },
+        child: Stack(
+          children: [
+            Center(
+              child: _controller != null && _controller!.value.isInitialized
+                  ? AspectRatio(
+                      aspectRatio: _controller!.value.aspectRatio,
+                      child: VideoPlayer(_controller!),
+                    )
+                  : const CircularProgressIndicator(color: Colors.white),
+            ),
+
+            if (_showControls) ...[
+              // Back button
+              Positioned(
+                top: 40,
+                left: 20,
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+
+              // Video info
+              Positioned(
+                bottom: 40,
+                left: 20,
+                right: 20,
+                child: Text(
+                  post.tags,
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

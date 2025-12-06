@@ -4,7 +4,13 @@ import 'package:flutter/material.dart';
 
 class MainNavBar extends StatelessWidget {
   final int currIndex;
-  const MainNavBar({super.key, required this.currIndex});
+  final Function(int) onTabSelected;
+  
+  const MainNavBar({
+    super.key,
+    required this.currIndex,
+    required this.onTabSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -13,46 +19,9 @@ class MainNavBar extends StatelessWidget {
         splashColor: Colors.transparent,
         highlightColor: Colors.transparent,
       ),
-
       child: BottomNavigationBar(
         currentIndex: currIndex,
-        onTap: (i) {
-          switch (i) {
-            case 0:
-               Navigator.push(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      ProfilePage(),
-                  transitionDuration: Duration.zero,
-                  reverseTransitionDuration: Duration.zero,
-                ),
-              );           
-                break;
-            case 1:
-              Navigator.push(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      PlaygroundScreen(),
-                  transitionDuration: Duration.zero,
-                  reverseTransitionDuration: Duration.zero,
-                ),
-              );
-              break;
-            case 2:
-              Navigator.push(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      LikedScreen(),
-                  transitionDuration: Duration.zero,
-                  reverseTransitionDuration: Duration.zero,
-                ),
-              );
-              break;
-          }
-        },
+        onTap: onTabSelected,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.app_settings_alt),
