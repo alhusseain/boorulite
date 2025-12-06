@@ -128,8 +128,14 @@ class MainFeedWidgetState extends State<MainFeedWidget>
   }
 
   void _onFavorite(Post post) {
-    context.read<SavedPostsProvider>().savePost(post);
-    _showSnackBar('Added to liked posts <3');
+    if(!context.read<SavedPostsProvider>().isSaved(post.id)) {
+      context.read<SavedPostsProvider>().savePost(post);
+      _showSnackBar('Added to liked posts <3');
+    }
+    else{
+      context.read<SavedPostsProvider>().deletePost(post);
+      _showSnackBar('Post removed from likes');
+    }
   }
 
   void _onHorizontalSwipe(DragEndDetails details) {
@@ -474,21 +480,6 @@ class MainFeedWidgetState extends State<MainFeedWidget>
 
     return Column(
       children: [
-        IconButton(
-          icon: Icon(
-            isLiked ? Icons.favorite : Icons.favorite_border,
-            color: isLiked ? Colors.red : Colors.white,
-          ),
-          onPressed: () {
-            if (isLiked) {
-              savedPostsProvider.deletePost(post);
-              _showSnackBar('Removed from liked posts');
-            } else {
-              savedPostsProvider.savePost(post);
-              _showSnackBar('Added to liked posts <3');
-            }
-          },
-        ),
         IconButton(
           icon: const Icon(Icons.bug_report, color: Colors.white),
           onPressed: () {
