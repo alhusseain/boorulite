@@ -29,8 +29,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => BlockListProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => FeedProvider()),
-        ChangeNotifierProvider(create: (_) => SavedPostsProvider()),
         ChangeNotifierProvider(create: (_) => VideoControllerService()),
+        ChangeNotifierProvider(create: (_) => SavedPostsProvider()),
       ],
       child: MaterialApp(
         title: 'Boorulite',
@@ -86,7 +86,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   void _onTabSelected(int index) {
     final previousIndex = _currentIndex;
-    
+
     setState(() {
       _currentIndex = index;
     });
@@ -119,4 +119,3 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     );
   }
 }
-

@@ -17,6 +17,7 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   sqflite:
 
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

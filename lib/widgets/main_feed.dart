@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
+
 import '../models/post.dart';
 import '../providers/saved_posts_provider.dart';
 import '../providers/feed_provider.dart';
@@ -15,7 +16,8 @@ class MainFeedWidget extends StatefulWidget {
   State<MainFeedWidget> createState() => MainFeedWidgetState();
 }
 
-class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObserver {
+class MainFeedWidgetState extends State<MainFeedWidget>
+    with WidgetsBindingObserver {
   int _currentIndex = 0;
   bool _initialVideoLoaded = false;
   bool _showTagOverlay = false;
@@ -25,6 +27,7 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _setupVideoService();
       context.read<FeedProvider>().fetchPosts();
@@ -34,14 +37,18 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
   void _setupVideoService() {
     final videoService = context.read<VideoControllerService>();
     final feedProvider = context.read<FeedProvider>();
-    
+
     videoService.setBatchCallbacks(
       getUrlsBatch: (startIndex, count) {
         final posts = feedProvider.posts;
         final urls = <String>[];
-        for (int i = startIndex; i < startIndex + count && i < posts.length; i++) {
+
+        for (int i = startIndex;
+        i < startIndex + count && i < posts.length;
+        i++) {
           urls.add(posts[i].isVideo ? posts[i].fileUrl : '');
         }
+
         return urls;
       },
       getCount: () => feedProvider.posts.length,
@@ -57,6 +64,7 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final videoService = context.read<VideoControllerService>();
+
     if (state == AppLifecycleState.paused) {
       videoService.onAppPaused();
     } else if (state == AppLifecycleState.resumed) {
@@ -65,7 +73,8 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
   }
 
   void pauseVideo() => context.read<VideoControllerService>().onBecameHidden();
-  void resumeVideo() => context.read<VideoControllerService>().onBecameVisible();
+  void resumeVideo() =>
+      context.read<VideoControllerService>().onBecameVisible();
 
   void _showTagSelection() {
     context.read<VideoControllerService>().pause();
@@ -89,11 +98,13 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
 
   void _onSearchTags(List<String> tags) {
     final feedProvider = context.read<FeedProvider>();
+
     if (tags.isEmpty) {
       feedProvider.clearSearch();
     } else {
       feedProvider.setSearchTags(tags);
     }
+
     _currentIndex = 0;
     _initialVideoLoaded = false;
     _hideSearch();
@@ -111,7 +122,7 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
 
   void _onTagsConfirmed(List<String> selectedTags) {
     if (selectedTags.isNotEmpty) {
-      // later 
+      // TODO: implement blocking logic later
       _showSnackBar('Tags blocked!');
     }
   }
@@ -123,6 +134,7 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
 
   void _onHorizontalSwipe(DragEndDetails details) {
     final velocity = details.primaryVelocity ?? 0;
+
     if (velocity > 300) {
       _onFavorite(context.read<FeedProvider>().posts[_currentIndex]);
     } else if (velocity < -300) {
@@ -130,10 +142,14 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
     }
   }
 
-  void _onPageChanged(int index, FeedProvider feedProvider, VideoControllerService videoService) {
+  void _onPageChanged(
+      int index,
+      FeedProvider feedProvider,
+      VideoControllerService videoService,
+      ) {
     _currentIndex = index;
-    
     final post = feedProvider.posts[index];
+
     if (post.isVideo) {
       videoService.initializeVideo(index, post.fileUrl);
     } else {
@@ -151,12 +167,16 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
     final feedProvider = context.watch<FeedProvider>();
     final videoService = context.watch<VideoControllerService>();
 
+    // Loading state
     if (feedProvider.isLoading) {
       return Scaffold(
-        body: Center(child: CircularProgressIndicator(color: colorScheme.primary)),
+        body: Center(
+          child: CircularProgressIndicator(color: colorScheme.primary),
+        ),
       );
     }
 
+    // Error state
     if (feedProvider.error != null) {
       return Scaffold(
         body: Center(
@@ -165,25 +185,41 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
             children: [
               Icon(Icons.error_outline, size: 50, color: colorScheme.error),
               const SizedBox(height: 16),
-              Text(feedProvider.error!, style: TextStyle(color: colorScheme.onSurface), textAlign: TextAlign.center),
+              Text(
+                feedProvider.error!,
+                style: TextStyle(color: colorScheme.onSurface),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: feedProvider.fetchPosts, child: const Text('Retry')),
+              ElevatedButton(
+                onPressed: feedProvider.fetchPosts,
+                child: const Text('Retry'),
+              ),
             ],
           ),
         ),
       );
     }
 
+    // Empty results
     if (!feedProvider.hasPosts) {
       return Scaffold(
-        body: Center(child: Text('No posts found', style: TextStyle(color: colorScheme.onSurface))),
+        body: Center(
+          child: Text(
+            'No posts found',
+            style: TextStyle(color: colorScheme.onSurface),
+          ),
+        ),
       );
     }
 
+    // Initialize first video
     if (!_initialVideoLoaded && feedProvider.hasPosts) {
       _initialVideoLoaded = true;
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final firstPost = feedProvider.posts[0];
+
         if (firstPost.isVideo) {
           videoService.initializeVideo(0, firstPost.fileUrl);
         }
@@ -191,26 +227,38 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
     }
 
     final currentPost = feedProvider.posts[_currentIndex];
-    
+
     return Scaffold(
       body: Stack(
         children: [
           PageView.builder(
             scrollDirection: Axis.vertical,
             itemCount: feedProvider.posts.length,
-            onPageChanged: (index) => _onPageChanged(index, feedProvider, videoService),
+            onPageChanged: (index) =>
+                _onPageChanged(index, feedProvider, videoService),
             itemBuilder: (context, index) {
               final post = feedProvider.posts[index];
               return _buildPostItem(post, index, colorScheme, videoService);
             },
           ),
-          Positioned(top: 0, left: 0, right: 0, child: _buildSearchBar(colorScheme, feedProvider)),
+
+          // Search bar
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: _buildSearchBar(colorScheme, feedProvider),
+          ),
+
+          // Tag overlay
           if (_showTagOverlay)
             TagSelectionOverlay(
               tags: currentPost.tags,
               onClose: _hideTagSelection,
               onConfirm: _onTagsConfirmed,
             ),
+
+          // Search overlay
           if (_showSearchOverlay)
             TagSearchWidget(
               onClose: _hideSearch,
@@ -222,7 +270,12 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
     );
   }
 
-  Widget _buildPostItem(Post post, int index, ColorScheme colorScheme, VideoControllerService videoService) {
+  Widget _buildPostItem(
+      Post post,
+      int index,
+      ColorScheme colorScheme,
+      VideoControllerService videoService,
+      ) {
     return GestureDetector(
       onHorizontalDragEnd: _onHorizontalSwipe,
       child: Stack(
@@ -230,7 +283,9 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
         children: [
           Container(
             color: colorScheme.surface,
-            child: Center(child: _buildMediaContent(post, index, colorScheme, videoService)),
+            child: Center(
+              child: _buildMediaContent(post, index, colorScheme, videoService),
+            ),
           ),
           Container(
             decoration: const BoxDecoration(
@@ -241,45 +296,74 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
               ),
             ),
           ),
-          Positioned(bottom: 80, right: 10, child: _buildActionButtons(post, colorScheme)),
+          Positioned(
+            bottom: 80,
+            right: 10,
+            child: _buildActionButtons(post, colorScheme),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildMediaContent(Post post, int index, ColorScheme colorScheme, VideoControllerService videoService) {
+  Widget _buildMediaContent(
+      Post post,
+      int index,
+      ColorScheme colorScheme,
+      VideoControllerService videoService,
+      ) {
     if (post.isVideo) {
       return _buildVideoPlayer(post, index, colorScheme, videoService);
     }
+
     return _buildImage(post, colorScheme);
   }
 
-  Widget _buildVideoPlayer(Post post, int index, ColorScheme colorScheme, VideoControllerService videoService) {
+  Widget _buildVideoPlayer(
+      Post post,
+      int index,
+      ColorScheme colorScheme,
+      VideoControllerService videoService,
+      ) {
     final isCurrentVideo = videoService.currentIndex == index;
     final controller = videoService.controller;
-    
+
     if (isCurrentVideo && controller != null && videoService.isInitialized) {
-      final showLoading = videoService.isBuffering || videoService.isWaitingForBuffer;
-      
+      final showLoading =
+          videoService.isBuffering || videoService.isWaitingForBuffer;
+
       return GestureDetector(
         onTap: videoService.togglePlayPause,
         child: Stack(
           alignment: Alignment.center,
           children: [
-            AspectRatio(aspectRatio: videoService.aspectRatio, child: VideoPlayer(controller)),
-            if (showLoading) CircularProgressIndicator(color: colorScheme.primary),
+            AspectRatio(
+              aspectRatio: videoService.aspectRatio,
+              child: VideoPlayer(controller),
+            ),
+            if (showLoading)
+              CircularProgressIndicator(color: colorScheme.primary),
             if (!showLoading)
               AnimatedOpacity(
                 opacity: videoService.isPlaying ? 0.0 : 1.0,
                 duration: const Duration(milliseconds: 200),
                 child: Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: Colors.black.withAlpha(120), shape: BoxShape.circle),
-                  child: const Icon(Icons.play_arrow, color: Colors.white, size: 50),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withAlpha(120),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow,
+                    color: Colors.white,
+                    size: 50,
+                  ),
                 ),
               ),
             Positioned(
-              bottom: 0, left: 0, right: 0,
+              bottom: 0,
+              left: 0,
+              right: 0,
               child: VideoProgressIndicator(
                 controller,
                 allowScrubbing: true,
@@ -288,21 +372,23 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
                   bufferedColor: colorScheme.primary.withAlpha(100),
                   backgroundColor: Colors.white.withAlpha(50),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                padding:
+                const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               ),
             ),
           ],
         ),
       );
     }
-    
+
     return Stack(
       alignment: Alignment.center,
       children: [
         Image.network(
           post.previewUrl,
           fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => Icon(Icons.broken_image, size: 50, color: colorScheme.onSurface),
+          errorBuilder: (_, __, ___) =>
+              Icon(Icons.broken_image, size: 50, color: colorScheme.onSurface),
         ),
         CircularProgressIndicator(color: colorScheme.primary),
       ],
@@ -313,14 +399,22 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
     return Image.network(
       post.fileUrl.isNotEmpty ? post.fileUrl : post.previewUrl,
       fit: BoxFit.contain,
-      loadingBuilder: (_, child, progress) => progress == null ? child : CircularProgressIndicator(color: colorScheme.primary),
-      errorBuilder: (_, __, ___) => Icon(Icons.broken_image, size: 50, color: colorScheme.onSurface),
+      loadingBuilder: (_, child, progress) =>
+      progress == null ? child : CircularProgressIndicator(
+        color: colorScheme.primary,
+      ),
+      errorBuilder: (_, __, ___) =>
+          Icon(Icons.broken_image, size: 50, color: colorScheme.onSurface),
     );
   }
 
-  Widget _buildSearchBar(ColorScheme colorScheme, FeedProvider feedProvider) {
+  Widget _buildSearchBar(
+      ColorScheme colorScheme,
+      FeedProvider feedProvider,
+      ) {
     final hasSearch = feedProvider.hasSearchTags;
-    final searchText = hasSearch ? feedProvider.searchTags.join(', ') : 'Search';
+    final searchText =
+    hasSearch ? feedProvider.searchTags.join(', ') : 'Search';
 
     return SafeArea(
       child: Padding(
@@ -328,20 +422,26 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
         child: GestureDetector(
           onTap: _showSearch,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: colorScheme.surface.withAlpha(170),
               borderRadius: BorderRadius.circular(5),
             ),
             child: Row(
               children: [
-                Icon(Icons.search, color: colorScheme.onSurface.withAlpha(hasSearch ? 255 : 150)),
+                Icon(
+                  Icons.search,
+                  color: colorScheme.onSurface
+                      .withAlpha(hasSearch ? 255 : 150),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     searchText,
                     style: TextStyle(
-                      color: colorScheme.onSurface.withAlpha(hasSearch ? 255 : 150),
+                      color: colorScheme.onSurface
+                          .withAlpha(hasSearch ? 255 : 150),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -353,7 +453,11 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
                       _currentIndex = 0;
                       _initialVideoLoaded = false;
                     },
-                    child: Icon(Icons.close, color: colorScheme.onSurface, size: 20),
+                    child: Icon(
+                      Icons.close,
+                      color: colorScheme.onSurface,
+                      size: 20,
+                    ),
                   ),
               ],
             ),
@@ -365,12 +469,16 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
 
   Widget _buildActionButtons(Post post, ColorScheme colorScheme) {
     final savedPostsProvider = context.watch<SavedPostsProvider>();
-    final isLiked = savedPostsProvider.posts.any((p) => p.id == post.id);
+    final isLiked =
+    savedPostsProvider.posts.any((p) => p.id == post.id);
 
     return Column(
       children: [
         IconButton(
-          icon: Icon(isLiked ? Icons.favorite : Icons.favorite_border, color: isLiked ? Colors.red : Colors.white),
+          icon: Icon(
+            isLiked ? Icons.favorite : Icons.favorite_border,
+            color: isLiked ? Colors.red : Colors.white,
+          ),
           onPressed: () {
             if (isLiked) {
               savedPostsProvider.deletePost(post);
@@ -384,7 +492,6 @@ class MainFeedWidgetState extends State<MainFeedWidget> with WidgetsBindingObser
         IconButton(
           icon: const Icon(Icons.bug_report, color: Colors.white),
           onPressed: () {
-            // ignore: avoid_print
             print(post);
             _showSnackBar('Post data printed to console.');
           },
