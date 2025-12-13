@@ -59,7 +59,7 @@ class _TagSearchWidgetState extends State<TagSearchWidget> {
   Future<void> _fetchSuggestions(String query) async {
     setState(() => _isLoading = true);
     try {
-      final tags = await _api.fetchTags(namePattern: query, limit: 10);
+      final tags = await _api.fetchTags(namePattern: query);
       setState(() {
         _suggestions = tags.where((t) => !_selectedTags.contains(t.name)).toList();
         _isLoading = false;

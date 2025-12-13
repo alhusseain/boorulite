@@ -2,17 +2,18 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/post.dart';
 import '../models/tag.dart';
+import 'package:flutter/foundation.dart';
 
 class ApiService {
   static const String _baseUrl = 'https://www.sakugabooru.com';
 
-  Future<List<Tag>> fetchTags({String namePattern = '', int limit = 10}) async {
+  Future<List<Tag>> fetchTags({String namePattern = '', int limit = 25}) async {
     final uri = Uri.parse('$_baseUrl/tag.json').replace(queryParameters: {
       'limit': limit.toString(),
       'order': 'count',
       if (namePattern.isNotEmpty) 'name_pattern': namePattern,
     });
-
+    debugPrint('Final URI = $uri');
     try {
       final response = await http.get(uri);
 

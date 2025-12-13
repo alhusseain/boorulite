@@ -242,7 +242,6 @@ class VideoControllerService extends ChangeNotifier {
   void _attemptRecovery() {
     final position = _controller?.value.position;
     if (position != null) {
-      debugPrint('Attempting soft recovery by seeking to $position --- temp debug message, matensash teshelha');
       _controller?.seekTo(position);
       _bufferingStartTime = null;
     }
