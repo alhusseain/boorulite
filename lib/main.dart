@@ -12,6 +12,7 @@ import 'pages/profile_page.dart';
 import 'app_colors.dart';
 import 'widgets/main_feed.dart';
 import 'widgets/main_nav_bar.dart';
+import 'pages/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,18 +34,18 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SavedPostsProvider()),
       ],
       child: MaterialApp(
-        title: 'Boorulite',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
+            title: 'Boorulite',
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
           colorScheme: AppColors.darkScheme,
           scaffoldBackgroundColor: AppColors.darkScheme.surface,
-          appBarTheme: AppBarTheme(
+              appBarTheme: AppBarTheme(
             backgroundColor: AppColors.darkScheme.surface,
             foregroundColor: AppColors.darkScheme.onSurface,
-            elevation: 0,
-          ),
-        ),
-        home: const MainScreen(),
+                elevation: 0,
+              ),
+            ),
+            home: const SplashScreen(),
       ),
     );
   }
