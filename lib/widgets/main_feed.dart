@@ -159,7 +159,7 @@ class MainFeedWidgetState extends State<MainFeedWidget>
     if (post.isVideo) {
       videoService.initializeVideo(index, post.fileUrl);
     } else {
-      videoService.disposeVideo();
+      videoService.pauseCurrentVideo();
     }
 
     if (index >= feedProvider.posts.length - 3) {

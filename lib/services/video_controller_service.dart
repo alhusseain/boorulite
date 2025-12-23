@@ -75,12 +75,10 @@ class VideoControllerService extends ChangeNotifier {
     _isPreloading = true;
     _currentBatchStart = startIndex;
     
-    final keysToRemove = _preloadedVideos.keys
-        .where((idx) => idx < startIndex || idx >= startIndex + _batchSize)
-        .toList();
-    for (final key in keysToRemove) {
-      await _preloadedVideos[key]?.controller?.dispose();
-      _preloadedVideos.remove(key);
+    for (final entry in _preloadedVideos.entries) {
+      if (entry.key < startIndex || entry.key >= startIndex + _batchSize) {
+        entry.value.controller?.pause();
+      }
     }
     
     final urls = getVideoUrlsBatch!(startIndex, _batchSize);
@@ -138,6 +136,7 @@ class VideoControllerService extends ChangeNotifier {
       _controller = preloaded.controller;
       _currentIndex = index;
       _controller!.addListener(_onVideoStateChanged);
+      _controller!.seekTo(Duration.zero);
       _startBufferHealthMonitor();
       notifyListeners();
       return;
@@ -160,6 +159,16 @@ class VideoControllerService extends ChangeNotifier {
     } catch (e) {
       await disposeVideo();
     }
+  }
+  void pauseCurrentVideo() {
+    _stopBufferHealthMonitor();
+    _controller?.removeListener(_onVideoStateChanged);
+    _controller?.pause();
+    _hasStartedPlaying = false;
+    _controller = null;
+    _currentIndex = null;
+    _currentVideoUrl = null;
+    notifyListeners();
   }
 
   Future<void> disposeVideo() async {
