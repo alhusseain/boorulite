@@ -13,8 +13,9 @@ class DatabaseProvider {
 
     _db = await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: DatabaseInitializer.onCreate,
+      onUpgrade: DatabaseInitializer.onUpgrade,
     );
 
     return _db!;

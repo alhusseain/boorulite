@@ -18,7 +18,9 @@ class PostRepository {
         'file_url': post.fileUrl,
         'tags': jsonEncode(post.tags),
         'file_ext': post.fileExt,
-        'score':post.score,
+        'score': post.score,
+        'source': post.source,
+        'rating': post.rating,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -36,6 +38,8 @@ class PostRepository {
       tags: List<String>.from(jsonDecode(row['tags'] as String)),
       fileExt: row['file_ext'] as String,
       score: row['score'] as int,
+      source: row['source'] as String? ?? 'Unknown',
+      rating: row['rating'] as String? ?? 's',
     )).toList();
 
     debugPrint('DB: Found ${posts.length} posts');
@@ -63,6 +67,8 @@ class PostRepository {
       tags: List<String>.from(jsonDecode(row['tags'] as String)),
       fileExt: row['file_ext'] as String,
       score: row['score'] as int,
+      source: row['source'] as String? ?? 'Unknown',
+      rating: row['rating'] as String? ?? 's',
     );
   }
 

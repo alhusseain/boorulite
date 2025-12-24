@@ -22,6 +22,7 @@ class MainFeedWidgetState extends State<MainFeedWidget>
   bool _initialVideoLoaded = false;
   bool _showTagOverlay = false;
   bool _showSearchOverlay = false;
+  bool _showLandscapeSearchBar = false;
 
   @override
   void initState() {
@@ -92,7 +93,10 @@ class MainFeedWidgetState extends State<MainFeedWidget>
   }
 
   void _hideSearch() {
-    setState(() => _showSearchOverlay = false);
+    setState(() {
+      _showSearchOverlay = false;
+      _showLandscapeSearchBar = false;
+    });
     context.read<VideoControllerService>().play();
   }
 
@@ -421,7 +425,31 @@ class MainFeedWidgetState extends State<MainFeedWidget>
     final hasSearch = feedProvider.hasSearchTags;
     final searchText =
     hasSearch ? feedProvider.searchTags.join(', ') : 'Search';
-
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    if (isLandscape && !_showLandscapeSearchBar) {
+      return SafeArea(
+        child: Align(
+          alignment: Alignment.topRight,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: GestureDetector(
+              onTap: () => setState(() => _showLandscapeSearchBar = true),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface.withAlpha(150),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.search,
+                  color: colorScheme.onSurface.withAlpha(hasSearch ? 255 : 180),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -461,6 +489,18 @@ class MainFeedWidgetState extends State<MainFeedWidget>
                       Icons.close,
                       color: colorScheme.onSurface,
                       size: 20,
+                    ),
+                  ),
+                if (isLandscape)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: GestureDetector(
+                      onTap: () => setState(() => _showLandscapeSearchBar = false),
+                      child: Icon(
+                        Icons.keyboard_arrow_up,
+                        color: colorScheme.onSurface,
+                        size: 20,
+                      ),
                     ),
                   ),
               ],

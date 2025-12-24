@@ -6,6 +6,8 @@ class Post {
   final List<String> tags;
   final String fileExt;
   final int score;
+  final String source;
+  final String rating;
 
   Post({
     required this.id,
@@ -14,6 +16,8 @@ class Post {
     required this.tags,
     required this.fileExt,
     required this.score,
+    required this.source,
+    required this.rating,
   });
 
   bool get isVideo => fileExt == 'mp4' || fileExt == 'webm';
@@ -29,6 +33,8 @@ class Post {
       tags: tagList,
       fileExt: json['file_ext'] as String? ?? '',
       score: json['score'] as int,
+      source: json['source'] as String? ?? 'Unknown',
+      rating: json['rating'] as String? ?? 's',
     );
   }
 }
