@@ -17,7 +17,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _opacityAnimation;
-  late Animation<double> _rotationAnimation;
 
   bool _showSecondGif = false;
   Timer? _timer;
@@ -45,17 +44,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         curve: const Interval(0.365, 1.0, curve: Curves.easeOut),
       ),
     );
-
-    _rotationAnimation = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.0, end: -0.3).chain(CurveTween(curve: Curves.easeIn)),
-        weight: 35.0,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: -0.3, end: 2.5).chain(CurveTween(curve: Curves.elasticOut)),
-        weight: 65.0,
-      ),
-    ]).animate(_animationController);
 
     _timer = Timer(_introGifDuration, () {
       if (mounted) {
@@ -105,17 +93,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       child: Scaffold(
         backgroundColor: Theme.of(context).colorScheme.surface,
         body: Center(
-          child: RotationTransition(
-            turns: _rotationAnimation,
-            child: ScaleTransition(
-              scale: _scaleAnimation,
-              child: FadeTransition(
-                opacity: _opacityAnimation,
-                child: Image.asset(
-                  gifPath,
-                  fit: BoxFit.contain,
-                  gaplessPlayback: true,
-                ),
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: FadeTransition(
+              opacity: _opacityAnimation,
+              child: Image.asset(
+                gifPath,
+                fit: BoxFit.contain,
+                gaplessPlayback: true,
               ),
             ),
           ),
