@@ -8,12 +8,7 @@ class TagSearchWidget extends StatefulWidget {
   final Function(List<String>) onSearch;
   final List<String> initialTags;
 
-  const TagSearchWidget({
-    super.key,
-    required this.onClose,
-    required this.onSearch,
-    this.initialTags = const [],
-  });
+  const TagSearchWidget({ super.key, required this.onClose, required this.onSearch, this.initialTags = const [], });
 
   @override
   State<TagSearchWidget> createState() => _TagSearchWidgetState();
@@ -24,14 +19,12 @@ class _TagSearchWidgetState extends State<TagSearchWidget> {
   final FocusNode _focusNode = FocusNode();
   Timer? _debounce;
   List<Tag> _suggestions = [];
-  List<String> _selectedTags = [];
   bool _isLoading = false;
   final ApiService _api = ApiService();
 
   @override
   void initState() {
     super.initState();
-    _selectedTags = List.from(widget.initialTags);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
@@ -47,11 +40,13 @@ class _TagSearchWidgetState extends State<TagSearchWidget> {
 
   void _onSearchChanged(String query) {
     _debounce?.cancel();
+    
     if (query.isEmpty) {
       setState(() => _suggestions = []);
       return;
     }
-    _debounce = Timer(const Duration(milliseconds: 350), () {
+    
+    _debounce = Timer(const Duration(milliseconds: 500), () {
       _fetchSuggestions(query);
     });
   }
@@ -60,11 +55,13 @@ class _TagSearchWidgetState extends State<TagSearchWidget> {
     setState(() => _isLoading = true);
     try {
       final tags = await _api.fetchTags(namePattern: query);
+      if (!mounted) return;
       setState(() {
-        _suggestions = tags.where((t) => !_selectedTags.contains(t.name)).toList();
+        _suggestions = tags;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _suggestions = [];
         _isLoading = false;
@@ -72,23 +69,16 @@ class _TagSearchWidgetState extends State<TagSearchWidget> {
     }
   }
 
-  void _addTag(String tagName) {
-    setState(() {
-      _selectedTags.add(tagName);
-      _suggestions = [];
-      _controller.clear();
-    });
-    _onSubmit();
+  void _onTagSelected(String name) {
+    widget.onSearch([name]);
   }
 
-  void _removeTag(String tagName) {
-    setState(() {
-      _selectedTags.remove(tagName);
-    });
-  }
-
-  void _onSubmit() {
-    widget.onSearch(_selectedTags);
+  void _onSubmit(String query) {
+    if (query.trim().isEmpty) return;
+    final tags = query.trim().split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
+    if (tags.isNotEmpty) {
+      widget.onSearch(tags);
+    }
   }
 
   void _onClear() {
@@ -127,12 +117,15 @@ class _TagSearchWidgetState extends State<TagSearchWidget> {
                                 controller: _controller,
                                 focusNode: _focusNode,
                                 onChanged: _onSearchChanged,
-                                onSubmitted: (_) => _onSubmit(),
+                                onSubmitted: _onSubmit,
                                 style: TextStyle(color: colorScheme.onSurface),
                                 decoration: InputDecoration(
                                   hintText: 'Search tags...',
                                   hintStyle: TextStyle(color: colorScheme.onSurface.withAlpha(100)),
-                                  prefixIcon: Icon(Icons.search, color: colorScheme.onSurface.withAlpha(150)),
+                                  prefixIcon: Icon(
+                                    Icons.search,
+                                    color: colorScheme.onSurface.withAlpha(150),
+                                  ),
                                   border: InputBorder.none,
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                                 ),
@@ -156,31 +149,29 @@ class _TagSearchWidgetState extends State<TagSearchWidget> {
                             ),
                           ],
                         ),
-                        if (_selectedTags.isNotEmpty) ...[
-                          Divider(height: 1, color: colorScheme.outline.withAlpha(50)),
+                        if (_controller.text.length < 2 && _suggestions.isEmpty) ...[
                           Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: _selectedTags.map((tag) {
-                                return Chip(
-                                  label: Text(tag),
-                                  deleteIcon: const Icon(Icons.close, size: 18),
-                                  onDeleted: () => _removeTag(tag),
-                                  backgroundColor: colorScheme.primary.withAlpha(30),
-                                  labelStyle: TextStyle(color: colorScheme.primary),
-                                  deleteIconColor: colorScheme.primary,
-                                  side: BorderSide(color: colorScheme.primary.withAlpha(100)),
-                                );
-                              }).toList(),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Row(
+                              children: [
+                                Icon(Icons.lightbulb_outline, size: 14, color: colorScheme.onSurface.withAlpha(100)),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Type to search for tags',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: colorScheme.onSurface.withAlpha(100),
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                         if (_suggestions.isNotEmpty) ...[
                           Divider(height: 1, color: colorScheme.outline.withAlpha(50)),
                           ConstrainedBox(
-                            constraints: const BoxConstraints(maxHeight: 200),
+                            constraints: const BoxConstraints(maxHeight: 300),
                             child: ListView.builder(
                               shrinkWrap: true,
                               itemCount: _suggestions.length,
@@ -199,26 +190,9 @@ class _TagSearchWidgetState extends State<TagSearchWidget> {
                                       fontSize: 12,
                                     ),
                                   ),
-                                  onTap: () => _addTag(tag.name),
+                                  onTap: () => _onTagSelected(tag.name),
                                 );
                               },
-                            ),
-                          ),
-                        ],
-                        if (_selectedTags.isNotEmpty) ...[
-                          Divider(height: 1, color: colorScheme.outline.withAlpha(50)),
-                          Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: _onSubmit,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: colorScheme.primary,
-                                  foregroundColor: colorScheme.onPrimary,
-                                ),
-                                child: const Text('Search'),
-                              ),
                             ),
                           ),
                         ],

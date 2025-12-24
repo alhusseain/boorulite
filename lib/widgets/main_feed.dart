@@ -8,9 +8,11 @@ import '../providers/feed_provider.dart';
 import '../services/video_controller_service.dart';
 import 'tag_search_widget.dart';
 import 'tag_selection_overlay.dart';
+import '../utils/heart_animation_util.dart';
 
 class MainFeedWidget extends StatefulWidget {
-  const MainFeedWidget({super.key});
+  final GlobalKey? likesKey;
+  const MainFeedWidget({super.key, this.likesKey});
 
   @override
   State<MainFeedWidget> createState() => MainFeedWidgetState();
@@ -102,6 +104,8 @@ class MainFeedWidgetState extends State<MainFeedWidget>
 
   void _onSearchTags(List<String> tags) {
     final feedProvider = context.read<FeedProvider>();
+    final videoService = context.read<VideoControllerService>();
+    videoService.reset();
 
     if (tags.isEmpty) {
       feedProvider.clearSearch();
@@ -135,6 +139,13 @@ class MainFeedWidgetState extends State<MainFeedWidget>
     if(!context.read<SavedPostsProvider>().isSaved(post.id)) {
       context.read<SavedPostsProvider>().savePost(post);
       _showSnackBar('Added to liked posts <3');
+      
+      if (widget.likesKey != null) {
+        HeartAnimationUtil.shootHearts(
+          context: context,
+          targetKey: widget.likesKey!,
+        );
+      }
     }
     else{
       context.read<SavedPostsProvider>().deletePost(post);
@@ -215,9 +226,37 @@ class MainFeedWidgetState extends State<MainFeedWidget>
     if (!feedProvider.hasPosts) {
       return Scaffold(
         body: Center(
-          child: Text(
-            'No posts found',
-            style: TextStyle(color: colorScheme.onSurface),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.search_off, size: 50, color: colorScheme.onSurface.withAlpha(100)),
+              const SizedBox(height: 16),
+              Text(
+                'No posts found',
+                style: TextStyle(color: colorScheme.onSurface, fontSize: 18),
+              ),
+              if (feedProvider.hasSearchTags) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'for: ${feedProvider.searchTags.join(", ")}',
+                  style: TextStyle(
+                    color: colorScheme.onSurface.withAlpha(150),
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    context.read<VideoControllerService>().reset();
+                    feedProvider.clearSearch();
+                    _currentIndex = 0;
+                    _initialVideoLoaded = false;
+                  },
+                  icon: const Icon(Icons.clear),
+                  label: const Text('Clear Search'),
+                ),
+              ],
+            ],
           ),
         ),
       );
@@ -286,6 +325,8 @@ class MainFeedWidgetState extends State<MainFeedWidget>
       ColorScheme colorScheme,
       VideoControllerService videoService,
       ) {
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    
     return GestureDetector(
       onHorizontalDragEnd: _onHorizontalSwipe,
       child: Stack(
@@ -306,6 +347,31 @@ class MainFeedWidgetState extends State<MainFeedWidget>
               ),
             ),
           ),
+          if (!isLandscape && post.tags.isNotEmpty)
+            Positioned(
+              bottom: 90,
+              left: 16,
+              right: 80,
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: post.tags.take(5).map((tag) => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    tag,
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                )).toList(),
+              ),
+            ),
           Positioned(
             bottom: 80,
             right: 10,
@@ -481,6 +547,7 @@ class MainFeedWidgetState extends State<MainFeedWidget>
                 if (hasSearch)
                   GestureDetector(
                     onTap: () {
+                      context.read<VideoControllerService>().reset();
                       feedProvider.clearSearch();
                       _currentIndex = 0;
                       _initialVideoLoaded = false;

@@ -75,9 +75,20 @@ class VideoControllerService extends ChangeNotifier {
     _isPreloading = true;
     _currentBatchStart = startIndex;
     
-    for (final entry in _preloadedVideos.entries) {
-      if (entry.key < startIndex || entry.key >= startIndex + _batchSize) {
-        entry.value.controller?.pause();
+    final keysToRemove = <int>[];
+    for (final index in _preloadedVideos.keys) {
+      if (index < startIndex - 1 || index >= startIndex + _batchSize + 1) {
+        keysToRemove.add(index);
+      }
+    }
+
+    for (final index in keysToRemove) {
+      final preloaded = _preloadedVideos.remove(index);
+      if (preloaded != null && preloaded.controller != null) {
+        if (preloaded.controller != _controller) {
+          debugPrint('Disposing stale video buffer at $index');
+          preloaded.controller!.dispose();
+        }
       }
     }
     
@@ -190,6 +201,21 @@ class VideoControllerService extends ChangeNotifier {
       await preloaded.controller?.dispose();
     }
     _preloadedVideos.clear();
+  }
+
+  Future<void> reset() async {
+    _stopBufferHealthMonitor();
+    _controller?.removeListener(_onVideoStateChanged);
+    _controller?.pause();
+    await disposeAllPreloaded();
+    _controller = null;
+    _currentIndex = null;
+    _currentVideoUrl = null;
+    _currentBatchStart = 0;
+    _isPreloading = false;
+    _hasStartedPlaying = false;
+    _consecutiveBufferingCount = 0;
+    notifyListeners();
   }
   // we check every second if the video is stuck buffering, because the video playback function degrades as you scroll, and might need a refresh.
   void _startBufferHealthMonitor() {

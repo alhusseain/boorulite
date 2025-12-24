@@ -11,7 +11,7 @@ class ApiService {
     final uri = Uri.parse('$_baseUrl/tag.json').replace(queryParameters: {
       'limit': limit.toString(),
       'order': 'count',
-      if (namePattern.isNotEmpty) 'name_pattern': namePattern,
+      if (namePattern.isNotEmpty) 'name': '$namePattern*',
     });
     debugPrint('Final URI = $uri');
     try {
