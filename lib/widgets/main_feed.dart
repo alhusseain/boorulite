@@ -438,16 +438,14 @@ class MainFeedWidgetState extends State<MainFeedWidget>
               children: [
                 Icon(
                   Icons.search,
-                  color: colorScheme.onSurface
-                      .withAlpha(hasSearch ? 255 : 150),
+                  color: colorScheme.onSurface.withAlpha(hasSearch ? 255 : 150),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     searchText,
                     style: TextStyle(
-                      color: colorScheme.onSurface
-                          .withAlpha(hasSearch ? 255 : 150),
+                      color: colorScheme.onSurface.withAlpha(hasSearch ? 255 : 150),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -474,19 +472,8 @@ class MainFeedWidgetState extends State<MainFeedWidget>
   }
 
   Widget _buildActionButtons(Post post, ColorScheme colorScheme) {
-    final savedPostsProvider = context.watch<SavedPostsProvider>();
-    final isLiked =
-    savedPostsProvider.posts.any((p) => p.id == post.id);
-
     return Column(
-      children: [
-        IconButton(
-          icon: const Icon(Icons.bug_report, color: Colors.white),
-          onPressed: () {
-            print(post);
-            _showSnackBar('Post data printed to console.');
-          },
-        ),
+      children: const [
       ],
     );
   }

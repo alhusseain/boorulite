@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'preferences_service.dart';
 
@@ -37,25 +38,40 @@ class NotificationService {
   ];
 
   static Future<void> initialize() async {
-    await _loadSettings();
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    
-    const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
-    
-    const settings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-    );
-    
-    await _notifications.initialize(
-      settings,
-      onDidReceiveNotificationResponse: _onNotificationTapped,
-    );
-    await _requestPermissions();
+    try {
+      await Future.wait([
+        _loadSettings(),
+      ]).timeout(const Duration(seconds: 5), onTimeout: () {
+        debugPrint('NotificationService: Settings load timed out, using defaults');
+        return [];
+      });
+      
+      const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+      
+      const iosSettings = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
+      
+      const settings = InitializationSettings(
+        android: androidSettings,
+        iOS: iosSettings,
+      );
+      
+      await _notifications.initialize(
+        settings,
+        onDidReceiveNotificationResponse: _onNotificationTapped,
+      ).timeout(const Duration(seconds: 10), onTimeout: () {
+        debugPrint('NotificationService: Plugin init timed out');
+      });
+      
+      _requestPermissions();
+      
+      debugPrint('NotificationService: Initialized successfully');
+    } catch (e) {
+      debugPrint('NotificationService: Initialization failed: $e');
+    }
   }
 
   static Future<void> _requestPermissions() async {
