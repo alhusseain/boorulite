@@ -63,6 +63,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   // Key to access MainFeedWidget state
   final GlobalKey<MainFeedWidgetState> _feedKey = GlobalKey();
+  final GlobalKey _likesKey = GlobalKey();
 
   @override
   void initState() {
@@ -108,7 +109,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           // Index 0: Preferences
           const ProfilePage(),
           // Index 1: Home Feed
-          MainFeedWidget(key: _feedKey),
+          MainFeedWidget(key: _feedKey, likesKey: _likesKey),
           // Index 2: Likes
           const LikedScreen(),
         ],
@@ -116,6 +117,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       bottomNavigationBar: MainNavBar(
         currIndex: _currentIndex,
         onTabSelected: _onTabSelected,
+        likesKey: _likesKey,
       ),
     );
   }
