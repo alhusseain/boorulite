@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/block_list_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/feed_provider.dart';
+import '../models/tag.dart';
+import '../services/booru_api.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({
@@ -251,23 +254,74 @@ class BlockListManager extends StatefulWidget {
 
 class _BlockListManagerState extends State<BlockListManager> {
   final TextEditingController _tagController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+  Timer? _debounce;
+  List<Tag> _suggestions = [];
+  bool _isLoading = false;
+  final ApiService _api = ApiService();
+
+  @override
+  void initState() {
+    super.initState();
+    _tagController.addListener(_onSearchChanged);
+  }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _tagController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
-  void _addTag() async {
+  void _onSearchChanged() {
+    final query = _tagController.text.trim();
+    _debounce?.cancel();
+    
+    if (query.isEmpty) {
+      setState(() => _suggestions = []);
+      return;
+    }
+    
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _fetchSuggestions(query);
+    });
+  }
+
+  Future<void> _fetchSuggestions(String query) async {
+    setState(() => _isLoading = true);
+    try {
+      final tags = await _api.fetchTags(namePattern: query);
+      if (!mounted) return;
+      setState(() {
+        _suggestions = tags;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _suggestions = [];
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _addTag() async {
     final tag = _tagController.text.trim();
     if (tag.isNotEmpty) {
       final blockListProvider = Provider.of<BlockListProvider>(context, listen: false);
       await blockListProvider.addTag(tag);
       _tagController.clear();
+      setState(() => _suggestions = []);
       // Refresh feed to apply block list
       final feedProvider = Provider.of<FeedProvider>(context, listen: false);
       await feedProvider.fetchPosts();
     }
+  }
+
+  Future<void> _onTagSuggestionSelected(String tagName) async {
+    _tagController.text = tagName;
+    await _addTag();
   }
 
   @override
@@ -278,35 +332,97 @@ class _BlockListManagerState extends State<BlockListManager> {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: TextField(
-                  controller: _tagController,
-                  style: TextStyle(color: colorScheme.onSurface),
-                  decoration: InputDecoration(
-                    labelText: 'Add tag to block list',
-                    labelStyle: TextStyle(color: colorScheme.onSurface.withAlpha(180)),
-                    hintText: 'e.g., naruto or one piece',
-                    hintStyle: TextStyle(color: colorScheme.onSurface.withAlpha(120)),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: colorScheme.secondary.withAlpha(150)),
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: colorScheme.primary),
-                      borderRadius: BorderRadius.circular(8.0),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _tagController,
+                      focusNode: _focusNode,
+                      style: TextStyle(color: colorScheme.onSurface),
+                      decoration: InputDecoration(
+                        labelText: 'Add tag to block list',
+                        labelStyle: TextStyle(color: colorScheme.onSurface.withAlpha(180)),
+                        hintText: 'Type to search tags...',
+                        hintStyle: TextStyle(color: colorScheme.onSurface.withAlpha(120)),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: colorScheme.onSurface.withAlpha(150),
+                        ),
+                        suffixIcon: _isLoading
+                            ? Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                              )
+                            : null,
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: colorScheme.secondary.withAlpha(150)),
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: colorScheme.primary),
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                      onSubmitted: (_) => _addTag(),
                     ),
                   ),
-                  onSubmitted: (_) => _addTag(),
+                  const SizedBox(width: 8.0),
+                  IconButton(
+                    icon: Icon(Icons.add, color: colorScheme.primary),
+                    onPressed: _addTag,
+                    tooltip: 'Add tag',
+                  ),
+                ],
+              ),
+              // Tag suggestions dropdown
+              if (_suggestions.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(top: 8.0),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface,
+                    borderRadius: BorderRadius.circular(8.0),
+                    border: Border.all(
+                      color: colorScheme.secondary.withAlpha(150),
+                      width: 1.0,
+                    ),
+                  ),
+                  constraints: const BoxConstraints(maxHeight: 200.0),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _suggestions.length,
+                    itemBuilder: (context, index) {
+                      final tag = _suggestions[index];
+                      return ListTile(
+                        dense: true,
+                        title: Text(
+                          tag.name,
+                          style: TextStyle(color: colorScheme.onSurface),
+                        ),
+                        trailing: Text(
+                          '${tag.count}',
+                          style: TextStyle(
+                            color: colorScheme.onSurface.withAlpha(100),
+                            fontSize: 12.0,
+                          ),
+                        ),
+                        onTap: () => _onTagSuggestionSelected(tag.name),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8.0),
-              IconButton(
-                icon: Icon(Icons.add, color: colorScheme.primary),
-                onPressed: _addTag,
-                tooltip: 'Add tag',
-              ),
             ],
           ),
           const SizedBox(height: 12.0),
