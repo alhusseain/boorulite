@@ -26,6 +26,7 @@ class BlockListProvider extends ChangeNotifier {
   /// This is called during initialization.
   Future<void> _loadBlockList() async {
     _blockList = await _preferencesService.getBlockList();
+    debugPrint('BlockListProvider: Loaded ${_blockList.length} blocked tags: $_blockList');
     notifyListeners();
   }
 
@@ -33,19 +34,23 @@ class BlockListProvider extends ChangeNotifier {
   /// 
   /// [tag] - The tag to be added (e.g., 'naruto').
   /// 
-  /// The tag is trimmed of whitespace and converted to lowercase for consistency.
+  /// The tag is trimmed of whitespace, spaces are converted to underscores,
+  /// and converted to lowercase for consistency with booru API format.
   /// If the tag is empty or already exists in the list, no action is taken.
   /// After adding, the list is persisted to SharedPreferences and listeners are notified.
   Future<void> addTag(String tag) async {
-    final trimmedTag = tag.trim().toLowerCase();
+    // Normalize tag: trim, convert spaces to underscores, lowercase
+    final normalizedTag = tag.trim().replaceAll(' ', '_').toLowerCase();
     
     // Validate: don't add empty tags or duplicates
-    if (trimmedTag.isEmpty || _blockList.contains(trimmedTag)) {
+    if (normalizedTag.isEmpty || _blockList.contains(normalizedTag)) {
+      debugPrint('BlockListProvider: Tag "$normalizedTag" is empty or already exists');
       return;
     }
 
-    _blockList.add(trimmedTag);
+    _blockList.add(normalizedTag);
     await _preferencesService.saveBlockList(_blockList);
+    debugPrint('BlockListProvider: Added tag "$normalizedTag". Block list now has ${_blockList.length} tags');
     notifyListeners();
   }
 
@@ -58,7 +63,10 @@ class BlockListProvider extends ChangeNotifier {
   Future<void> removeTag(String tag) async {
     if (_blockList.remove(tag)) {
       await _preferencesService.saveBlockList(_blockList);
+      debugPrint('BlockListProvider: Removed tag "$tag". Block list now has ${_blockList.length} tags');
       notifyListeners();
+    } else {
+      debugPrint('BlockListProvider: Tag "$tag" not found in block list');
     }
   }
 }
