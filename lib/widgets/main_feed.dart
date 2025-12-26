@@ -5,6 +5,8 @@ import 'package:video_player/video_player.dart';
 import '../models/post.dart';
 import '../providers/saved_posts_provider.dart';
 import '../providers/feed_provider.dart';
+import '../providers/block_list_provider.dart';
+import '../providers/settings_provider.dart';
 import '../services/video_controller_service.dart';
 import 'tag_search_widget.dart';
 import 'tag_selection_overlay.dart';
@@ -33,8 +35,16 @@ class MainFeedWidgetState extends State<MainFeedWidget>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _setupVideoService();
+      _setupFeedProvider();
       context.read<FeedProvider>().fetchPosts();
     });
+  }
+
+  void _setupFeedProvider() {
+    final feedProvider = context.read<FeedProvider>();
+    final blockListProvider = context.read<BlockListProvider>();
+    final settingsProvider = context.read<SettingsProvider>();
+    feedProvider.setProviders(blockListProvider, settingsProvider);
   }
 
   void _setupVideoService() {
