@@ -21,7 +21,7 @@ class AppColors {
     tertiary: warmTaupe,
     error: Color(0xFFB3261E),
     onError: Colors.white,
-    surface: chinoBeige,
+    surface: Colors.white,
     onSurface: darkNavy,
   );
 
