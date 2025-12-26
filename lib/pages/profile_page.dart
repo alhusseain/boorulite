@@ -2,20 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/block_list_provider.dart';
 import '../providers/settings_provider.dart';
-import '../app_colors.dart';
+import '../providers/feed_provider.dart';
 
-/// Profile page that functions as a comprehensive content filtering and settings screen.
-/// 
-/// This page allows users to:
-/// - Manage block list of tags
-/// - Configure content quality preferences
-/// - Adjust display and refresh settings
-/// - Set content filtering options
-/// - Configure video playback settings
 class ProfilePage extends StatelessWidget {
   const ProfilePage({
     super.key,
-    });
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +31,6 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-/// Main content widget with all settings sections in a scrollable view.
 class SettingsContent extends StatelessWidget {
   const SettingsContent({super.key});
 
@@ -50,43 +41,27 @@ class SettingsContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Maturity Rating Section
+          _SettingsSection(
+            title: 'Maturity Rating',
+            icon: Icons.shield,
+            children: const [MaturityRatingSettings()],
+          ),
+          const SizedBox(height: 24.0),
+          
+          // Dark Mode Section
+          _SettingsSection(
+            title: 'Appearance',
+            icon: Icons.dark_mode,
+            children: const [DarkModeSettings()],
+          ),
+          const SizedBox(height: 24.0),
+          
           // Block List Section
           _SettingsSection(
-            title: 'Block List',
+            title: 'Block Tags',
             icon: Icons.block,
             children: const [BlockListManager()],
-          ),
-          const SizedBox(height: 24.0),
-          
-          // Content Quality Section
-          _SettingsSection(
-            title: 'Content Quality',
-            icon: Icons.high_quality,
-            children: const [ContentQualitySettings()],
-          ),
-          const SizedBox(height: 24.0),
-          
-          // Display Preferences Section
-          _SettingsSection(
-            title: 'Display Preferences',
-            icon: Icons.display_settings,
-            children: const [DisplaySettings()],
-          ),
-          const SizedBox(height: 24.0),
-          
-          // Content Filtering Section
-          _SettingsSection(
-            title: 'Content Filtering',
-            icon: Icons.filter_list,
-            children: const [ContentFilterSettings()],
-          ),
-          const SizedBox(height: 24.0),
-          
-          // Video Settings Section
-          _SettingsSection(
-            title: 'Video Settings',
-            icon: Icons.video_settings,
-            children: const [VideoSettings()],
           ),
         ],
       ),
@@ -147,6 +122,125 @@ class _SettingsSection extends StatelessWidget {
   }
 }
 
+/// Maturity rating settings widget.
+class MaturityRatingSettings extends StatelessWidget {
+  const MaturityRatingSettings({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    return Consumer<SettingsProvider>(
+      builder: (context, settings, child) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              _buildRadioTile(
+                colorScheme: colorScheme,
+                title: 'Safe Only',
+                subtitle: 'Show only safe content',
+                value: 's',
+                groupValue: settings.maturityRating,
+                onChanged: (value) async {
+                  await settings.setMaturityRating(value!);
+                  // Refresh feed to apply rating filter
+                  await Provider.of<FeedProvider>(context, listen: false).fetchPosts();
+                },
+              ),
+              _buildRadioTile(
+                colorScheme: colorScheme,
+                title: 'Safe + Questionable',
+                subtitle: 'Include questionable content',
+                value: 'q',
+                groupValue: settings.maturityRating,
+                onChanged: (value) async {
+                  await settings.setMaturityRating(value!);
+                  // Refresh feed to apply rating filter
+                  await Provider.of<FeedProvider>(context, listen: false).fetchPosts();
+                },
+              ),
+              _buildRadioTile(
+                colorScheme: colorScheme,
+                title: 'All Ratings',
+                subtitle: 'Show all content including explicit',
+                value: '',
+                groupValue: settings.maturityRating,
+                onChanged: (value) async {
+                  await settings.setMaturityRating(value!);
+                  // Refresh feed to apply rating filter
+                  await Provider.of<FeedProvider>(context, listen: false).fetchPosts();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRadioTile({
+    required ColorScheme colorScheme,
+    required String title,
+    required String subtitle,
+    required String value,
+    required String? groupValue,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return RadioListTile<String>(
+      title: Text(title, style: TextStyle(color: colorScheme.onSurface)),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          color: colorScheme.onSurface.withAlpha(180),
+          fontSize: 12.0,
+        ),
+      ),
+      value: value,
+      groupValue: groupValue,
+      onChanged: onChanged,
+      activeColor: colorScheme.primary,
+    );
+  }
+}
+
+/// Dark mode settings widget.
+class DarkModeSettings extends StatelessWidget {
+  const DarkModeSettings({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    return Consumer<SettingsProvider>(
+      builder: (context, settings, child) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: SwitchListTile(
+            title: Text(
+              'Dark Mode',
+              style: TextStyle(color: colorScheme.onSurface),
+            ),
+            subtitle: Text(
+              'Toggle between dark and light theme',
+              style: TextStyle(
+                color: colorScheme.onSurface.withAlpha(180),
+                fontSize: 12.0,
+              ),
+            ),
+            value: settings.isDarkMode,
+            onChanged: (value) {
+              settings.setDarkMode(value);
+            },
+            activeColor: colorScheme.primary,
+            activeTrackColor: colorScheme.secondary,
+          ),
+        );
+      },
+    );
+  }
+}
+
 /// Block list management widget.
 class BlockListManager extends StatefulWidget {
   const BlockListManager({super.key});
@@ -164,11 +258,15 @@ class _BlockListManagerState extends State<BlockListManager> {
     super.dispose();
   }
 
-  void _addTag() {
-    final tag = _tagController.text;
-    if (tag.trim().isNotEmpty) {
-      Provider.of<BlockListProvider>(context, listen: false).addTag(tag);
+  void _addTag() async {
+    final tag = _tagController.text.trim();
+    if (tag.isNotEmpty) {
+      final blockListProvider = Provider.of<BlockListProvider>(context, listen: false);
+      await blockListProvider.addTag(tag);
       _tagController.clear();
+      // Refresh feed to apply block list
+      final feedProvider = Provider.of<FeedProvider>(context, listen: false);
+      await feedProvider.fetchPosts();
     }
   }
 
@@ -189,6 +287,8 @@ class _BlockListManagerState extends State<BlockListManager> {
                   decoration: InputDecoration(
                     labelText: 'Add tag to block list',
                     labelStyle: TextStyle(color: colorScheme.onSurface.withAlpha(180)),
+                    hintText: 'e.g., naruto or one piece',
+                    hintStyle: TextStyle(color: colorScheme.onSurface.withAlpha(120)),
                     enabledBorder: OutlineInputBorder(
                       borderSide: BorderSide(color: colorScheme.secondary.withAlpha(150)),
                       borderRadius: BorderRadius.circular(8.0),
@@ -240,9 +340,12 @@ class _BlockListManagerState extends State<BlockListManager> {
                       ),
                       trailing: IconButton(
                         icon: Icon(Icons.delete, color: colorScheme.error),
-                        onPressed: () {
-                          Provider.of<BlockListProvider>(context, listen: false)
-                              .removeTag(tag);
+                        onPressed: () async {
+                          final blockListProvider = Provider.of<BlockListProvider>(context, listen: false);
+                          await blockListProvider.removeTag(tag);
+                          // Refresh feed to apply block list changes
+                          final feedProvider = Provider.of<FeedProvider>(context, listen: false);
+                          await feedProvider.fetchPosts();
                         },
                         tooltip: 'Remove tag',
                       ),
@@ -258,332 +361,6 @@ class _BlockListManagerState extends State<BlockListManager> {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Content quality settings widget.
-class ContentQualitySettings extends StatelessWidget {
-  const ContentQualitySettings({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
-    return Consumer<SettingsProvider>(
-      builder: (context, settings, child) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              _buildRadioTile(
-                colorScheme: colorScheme,
-                title: 'High Quality',
-                value: 'high_quality',
-                groupValue: settings.contentQuality,
-                onChanged: (value) {
-                  settings.setContentQuality(value!);
-                },
-              ),
-              _buildRadioTile(
-                colorScheme: colorScheme,
-                title: 'Medium Quality',
-                value: 'medium',
-                groupValue: settings.contentQuality,
-                onChanged: (value) {
-                  settings.setContentQuality(value!);
-                },
-              ),
-              _buildRadioTile(
-                colorScheme: colorScheme,
-                title: 'Any Quality',
-                value: 'any',
-                groupValue: settings.contentQuality,
-                onChanged: (value) {
-                  settings.setContentQuality(value!);
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildRadioTile({
-    required ColorScheme colorScheme,
-    required String title,
-    required String value,
-    required String? groupValue,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return RadioListTile<String>(
-      title: Text(title, style: TextStyle(color: colorScheme.onSurface)),
-      value: value,
-      groupValue: groupValue,
-      onChanged: onChanged,
-      activeColor: colorScheme.primary,
-    );
-  }
-}
-
-/// Display settings widget.
-class DisplaySettings extends StatelessWidget {
-  const DisplaySettings({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
-    return Consumer<SettingsProvider>(
-      builder: (context, settings, child) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              SwitchListTile(
-                title: Text(
-                  'Auto Refresh',
-                  style: TextStyle(color: colorScheme.onSurface),
-                ),
-                subtitle: Text(
-                  'Automatically refresh content every ${settings.refreshInterval}s',
-                  style: TextStyle(
-                    color: colorScheme.onSurface.withAlpha(180),
-                    fontSize: 12.0,
-                  ),
-                ),
-                value: settings.autoRefresh,
-                onChanged: (value) {
-                  settings.setAutoRefresh(value);
-                },
-                activeColor: colorScheme.primary,
-                activeTrackColor: colorScheme.secondary,
-              ),
-              if (settings.autoRefresh) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    children: [
-                      Text(
-                        'Refresh Interval:',
-                        style: TextStyle(color: colorScheme.onSurface),
-                      ),
-                      Expanded(
-                        child: Slider(
-                          value: settings.refreshInterval.toDouble(),
-                          min: 10,
-                          max: 120,
-                          divisions: 11,
-                          label: '${settings.refreshInterval}s',
-                          onChanged: (value) {
-                            settings.setRefreshInterval(value.toInt());
-                          },
-                          activeColor: colorScheme.primary,
-                        ),
-                      ),
-                      Text(
-                        '${settings.refreshInterval}s',
-                        style: TextStyle(color: colorScheme.onSurface),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              Divider(color: colorScheme.secondary.withAlpha(100)),
-              _buildRadioTile(
-                colorScheme: colorScheme,
-                title: 'Grid View',
-                value: 'grid',
-                groupValue: settings.displayMode,
-                onChanged: (value) {
-                  settings.setDisplayMode(value!);
-                },
-              ),
-              _buildRadioTile(
-                colorScheme: colorScheme,
-                title: 'List View',
-                value: 'list',
-                groupValue: settings.displayMode,
-                onChanged: (value) {
-                  settings.setDisplayMode(value!);
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildRadioTile({
-    required ColorScheme colorScheme,
-    required String title,
-    required String value,
-    required String? groupValue,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return RadioListTile<String>(
-      title: Text(title, style: TextStyle(color: colorScheme.onSurface)),
-      value: value,
-      groupValue: groupValue,
-      onChanged: onChanged,
-      activeColor: colorScheme.primary,
-    );
-  }
-}
-
-/// Content filter settings widget.
-class ContentFilterSettings extends StatelessWidget {
-  const ContentFilterSettings({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
-    return Consumer<SettingsProvider>(
-      builder: (context, settings, child) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              SwitchListTile(
-                title: Text(
-                  'Show Only Sakuga',
-                  style: TextStyle(color: colorScheme.onSurface),
-                ),
-                subtitle: Text(
-                  'Filter to show only high-quality sakuga animations',
-                  style: TextStyle(
-                    color: colorScheme.onSurface.withAlpha(180),
-                    fontSize: 12.0,
-                  ),
-                ),
-                value: settings.showOnlySakuga,
-                onChanged: (value) {
-                  settings.setShowOnlySakuga(value);
-                },
-                activeColor: colorScheme.primary,
-                activeTrackColor: colorScheme.secondary,
-              ),
-              Divider(color: colorScheme.secondary.withAlpha(100)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  children: [
-                    Text(
-                      'Minimum Rating:',
-                      style: TextStyle(color: colorScheme.onSurface),
-                    ),
-                    Expanded(
-                      child: Slider(
-                        value: settings.minRating.toDouble(),
-                        min: 0,
-                        max: 5,
-                        divisions: 5,
-                        label: '${settings.minRating}/5',
-                        onChanged: (value) {
-                          settings.setMinRating(value.toInt());
-                        },
-                        activeColor: colorScheme.primary,
-                      ),
-                    ),
-                    Text(
-                      '${settings.minRating}/5',
-                      style: TextStyle(color: colorScheme.onSurface),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-/// Video settings widget.
-class VideoSettings extends StatelessWidget {
-  const VideoSettings({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
-    return Consumer<SettingsProvider>(
-      builder: (context, settings, child) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              SwitchListTile(
-                title: Text(
-                  'Auto Play Videos',
-                  style: TextStyle(color: colorScheme.onSurface),
-                ),
-                subtitle: Text(
-                  'Automatically play videos when opened',
-                  style: TextStyle(
-                    color: colorScheme.onSurface.withAlpha(180),
-                    fontSize: 12.0,
-                  ),
-                ),
-                value: settings.autoPlay,
-                onChanged: (value) {
-                  settings.setAutoPlay(value);
-                },
-                activeColor: colorScheme.primary,
-                activeTrackColor: colorScheme.secondary,
-              ),
-              Divider(color: colorScheme.secondary.withAlpha(100)),
-              _buildRadioTile(
-                colorScheme: colorScheme,
-                title: 'Original Quality',
-                value: 'original',
-                groupValue: settings.videoQuality,
-                onChanged: (value) {
-                  settings.setVideoQuality(value!);
-                },
-              ),
-              _buildRadioTile(
-                colorScheme: colorScheme,
-                title: 'High Quality',
-                value: 'high',
-                groupValue: settings.videoQuality,
-                onChanged: (value) {
-                  settings.setVideoQuality(value!);
-                },
-              ),
-              _buildRadioTile(
-                colorScheme: colorScheme,
-                title: 'Medium Quality',
-                value: 'medium',
-                groupValue: settings.videoQuality,
-                onChanged: (value) {
-                  settings.setVideoQuality(value!);
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildRadioTile({
-    required ColorScheme colorScheme,
-    required String title,
-    required String value,
-    required String? groupValue,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return RadioListTile<String>(
-      title: Text(title, style: TextStyle(color: colorScheme.onSurface)),
-      value: value,
-      groupValue: groupValue,
-      onChanged: onChanged,
-      activeColor: colorScheme.primary,
     );
   }
 }
