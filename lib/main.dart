@@ -1,6 +1,5 @@
 import 'package:boorulite/providers/saved_posts_provider.dart';
 import 'package:boorulite/widgets/liked_screen.dart';
-import 'package:boorulite/widgets/video_thumb.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/block_list_provider.dart';
@@ -33,19 +32,27 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => VideoControllerService()),
         ChangeNotifierProvider(create: (_) => SavedPostsProvider()),
       ],
-      child: MaterialApp(
+      child: Consumer<SettingsProvider>(
+        builder: (context, settings, child) {
+          final colorScheme = settings.isDarkMode 
+              ? AppColors.darkScheme 
+              : AppColors.lightScheme;
+          
+          return MaterialApp(
             title: 'Boorulite',
             debugShowCheckedModeBanner: false,
             theme: ThemeData(
-          colorScheme: AppColors.darkScheme,
-          scaffoldBackgroundColor: AppColors.darkScheme.surface,
+              colorScheme: colorScheme,
+              scaffoldBackgroundColor: colorScheme.surface,
               appBarTheme: AppBarTheme(
-            backgroundColor: AppColors.darkScheme.surface,
-            foregroundColor: AppColors.darkScheme.onSurface,
+                backgroundColor: colorScheme.surface,
+                foregroundColor: colorScheme.onSurface,
                 elevation: 0,
               ),
             ),
             home: const SplashScreen(),
+          );
+        },
       ),
     );
   }
