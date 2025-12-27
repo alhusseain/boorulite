@@ -5,6 +5,10 @@ import 'database_initializer.dart';
 class DatabaseProvider {
   static Database? _db;
 
+  static Future<void> ensureInitialized() async {
+    await database;
+  }
+
   static Future<Database> get database async {
     if (_db != null) return _db!;
 

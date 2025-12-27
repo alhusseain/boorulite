@@ -13,14 +13,6 @@ class LikedScreen extends StatefulWidget {
 
 class _LikedScreenState extends State<LikedScreen> {
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<SavedPostsProvider>().fetchPosts();
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     final savedPostsProvider = context.watch<SavedPostsProvider>();
     double width = MediaQuery.of(context).size.width;

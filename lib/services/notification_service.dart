@@ -1,6 +1,9 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 import 'preferences_service.dart';
 
 class NotificationService {
@@ -39,6 +42,8 @@ class NotificationService {
 
   static Future<void> initialize() async {
     try {
+      tz.initializeTimeZones();
+      
       await Future.wait([
         _loadSettings(),
       ]).timeout(const Duration(seconds: 5), onTimeout: () {
@@ -66,21 +71,29 @@ class NotificationService {
         debugPrint('NotificationService: Plugin init timed out');
       });
       
-      _requestPermissions();
-      
       debugPrint('NotificationService: Initialized successfully');
     } catch (e) {
       debugPrint('NotificationService: Initialization failed: $e');
     }
   }
 
-  static Future<void> _requestPermissions() async {
-    await _notifications
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+  /// Request notification permission - call this after UI is visible
+  static Future<void> requestPermission() async {
+    final status = await Permission.notification.status;
+    debugPrint('NotificationService: Initial permission status: $status');
     
-    await _notifications
+    if (status.isDenied) {
+      final result = await Permission.notification.request();
+      debugPrint('NotificationService: Permission request result: $result');
+    } else if (status.isPermanentlyDenied) {
+      debugPrint('NotificationService: Permission permanently denied, opening settings');
+      await openAppSettings();
+    } else if (status.isGranted) {
+      debugPrint('NotificationService: Permission already granted');
+    }
+    
+    // iOS permissions handled by flutter_local_notifications init
+    final iosGranted = await _notifications
         .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>()
         ?.requestPermissions(
@@ -88,6 +101,7 @@ class NotificationService {
           badge: true,
           sound: true,
         );
+    debugPrint('NotificationService: iOS permission granted: $iosGranted');
   }
 
   static void _onNotificationTapped(NotificationResponse response) {
@@ -129,7 +143,7 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       showWhen: true,
-      icon: '@mipmap/ic_launcher',
+      icon: '@mipmap/launcher_icon',
     );
     
     const iosDetails = DarwinNotificationDetails(
@@ -164,7 +178,7 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       showWhen: true,
-      icon: '@mipmap/ic_launcher',
+      icon: '@mipmap/launcher_icon',
     );
     
     const iosDetails = DarwinNotificationDetails(
@@ -178,16 +192,17 @@ class NotificationService {
       iOS: iosDetails,
     );
     
-    Future.delayed(delay, () async {
-      if (_notificationsEnabled) {
-        await _notifications.show(
-          DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          message['title']!,
-          message['body']!,
-          details,
-        );
-      }
-    });
+    final scheduledTime = tz.TZDateTime.now(tz.local).add(delay);
+    
+    await _notifications.zonedSchedule(
+      0,
+      message['title']!,
+      message['body']!,
+      scheduledTime,
+      details,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+    );
   }
   static Future<void> cancelAllNotifications() async {
     await _notifications.cancelAll();

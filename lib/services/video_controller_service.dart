@@ -17,6 +17,7 @@ class VideoControllerService extends ChangeNotifier {
   VideoPlayerController? _controller;
   int? _currentIndex;
   bool _isVisible = true;
+  bool _isAppPaused = false;
   
   static const _batchSize = 3;
   final Map<int, _PreloadedVideo> _preloadedVideos = {};
@@ -233,7 +234,7 @@ class VideoControllerService extends ChangeNotifier {
     if (_controller == null || !isInitialized) return;
     
     if (!_hasStartedPlaying) {
-      if (_hasEnoughBufferToStart && _isVisible) {
+      if (_hasEnoughBufferToStart && _isVisible && !_isAppPaused) {
         debugPrint('Buffer reached ${(bufferProgress * 100).toInt()}%, starting playback');
         _hasStartedPlaying = true;
         _controller?.play();
@@ -263,7 +264,7 @@ class VideoControllerService extends ChangeNotifier {
         }
       }
     } else {
-      if (!isPlaying && _isVisible && _hasStartedPlaying) {
+      if (!isPlaying && _isVisible && !_isAppPaused && _hasStartedPlaying) {
         _controller?.play();
         notifyListeners();
       }
@@ -351,9 +352,13 @@ class VideoControllerService extends ChangeNotifier {
     pause();
   }
 
-  void onAppPaused() => pause();
+  void onAppPaused() {
+    _isAppPaused = true;
+    pause();
+  }
 
   void onAppResumed() {
+    _isAppPaused = false;
     if (_isVisible && isInitialized) play();
   }
 

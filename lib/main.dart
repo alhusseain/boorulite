@@ -7,6 +7,7 @@ import 'providers/feed_provider.dart';
 import 'providers/settings_provider.dart';
 import 'services/video_controller_service.dart';
 import 'services/notification_service.dart';
+import 'core/database/database_provider.dart';
 import 'pages/profile_page.dart';
 import 'app_colors.dart';
 import 'widgets/main_feed.dart';
@@ -15,7 +16,12 @@ import 'pages/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService.initialize();
+  
+  await Future.wait([
+    NotificationService.initialize(),
+    DatabaseProvider.ensureInitialized(),
+  ]);
+  
   runApp(const MyApp());
 }
 

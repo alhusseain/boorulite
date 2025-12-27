@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../app_colors.dart';
 import '../main.dart';
+import '../services/notification_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -63,14 +64,17 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   Future<void> _handleTap() async {
     if (_animationController.isAnimating) return;
-    HapticFeedback.lightImpact();  
     _timer?.cancel();
     await _animationController.forward();
     if (mounted) {
       _navigateToMainScreen();
     }
   }
-  void _navigateToMainScreen() {
+  void _navigateToMainScreen() async {
+    await NotificationService.requestPermission();
+    
+    if (!mounted) return;
+    
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => const MainScreen(),
